@@ -42,7 +42,6 @@ function App() {
 
 		if (campaignId) {
 			async function fetchCampaign() {
-				// FIX: Hapus 'error' karena ga dipake biar ga error TS6133 di Vercel
 				const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
 				if (data) {
 					setCampaignTitle(data.title);
@@ -239,10 +238,12 @@ function App() {
 
 			<div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 				<div className="flex-1 flex flex-col justify-center items-center p-4 md:p-10 relative overflow-y-auto">
-					<div className="relative z-10 shadow-[0_0_80px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden border border-white/10 bg-[#1e1e24] max-h-[60vh] md:max-h-[80vh] aspect-square flex justify-center items-center">
+					
+					<div className="relative z-10 max-h-[60vh] md:max-h-[80vh] aspect-square flex justify-center items-center">
 						<TwibbonCanvas userPhoto={userPhoto} frameSrc={activeFrame} transform={photoTransform} setTransform={setPhotoTransform} isEditMode={sidebarState == "adjust"} canvasRef={canvasRef} />
+						
 						{!userPhoto && (
-							<div className="absolute inset-0 flex justify-center items-center bg-black/40 pointer-events-none">
+							<div className="absolute inset-0 flex justify-center items-center bg-black/40 pointer-events-none rounded-xl">
 								<p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full border border-white/10 backdrop-blur-md animate-pulse">Upload foto lu di panel kanan ⬇️</p>
 							</div>
 						)}
