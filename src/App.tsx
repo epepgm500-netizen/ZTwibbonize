@@ -4,7 +4,7 @@ import TwibbonCanvas from "./components/twibbon-canvas";
 import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
-import { supabase } from "./supabase"; // Import koneksi database
+import { supabase } from "./supabase";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -24,29 +24,26 @@ function App() {
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [isModeratorMode, setIsModeratorMode] = useState(false);
 
-	// State Modal & Upload
 	const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 	const [generatedLink, setGeneratedLink] = useState("");
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
 	const [isUploadingFrame, setIsUploadingFrame] = useState(false);
 
-	// State Pop-up
 	const [popup, setPopup] = useState<{show: boolean, title: string, message: string, type: "error" | "success"}>({show: false, title: "", message: "", type: "error"});
 
 	const triggerPopup = (title: string, message: string, type: "error" | "success" = "error") => {
 		setPopup({ show: true, title, message, type });
 	};
 
-	// Cek URL pas dibuka (Buat nangkep ID Campaign)
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
 		const campaignId = params.get("id");
 
 		if (campaignId) {
-			// Kalau ada ID di URL, tarik data dari Supabase
 			async function fetchCampaign() {
-				const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
+				// FIX: Hapus 'error' karena ga dipake biar ga error TS6133 di Vercel
+				const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
 				if (data) {
 					setCampaignTitle(data.title);
 					setCampaignCaption(data.caption);
@@ -72,7 +69,6 @@ function App() {
 		}
 	};
 
-	// --- UPLOAD FRAME KE SUPABASE STORAGE ---
 	const handleFrameUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
@@ -83,18 +79,15 @@ function App() {
 
 		setIsUploadingFrame(true);
 		
-		// Bikin nama file unik
 		const fileExt = file.name.split('.').pop();
 		const fileName = `${Math.random()}.${fileExt}`;
 		const filePath = `${fileName}`;
 
-		// Upload ke bucket 'frames'
 		const { error: uploadError } = await supabase.storage.from('frames').upload(filePath, file);
 
 		if (uploadError) {
 			triggerPopup("Gagal Upload", "Gagal upload ke Supabase. Cek koneksi.", "error");
 		} else {
-			// Ambil URL publicnya
 			const { data } = supabase.storage.from('frames').getPublicUrl(filePath);
 			setActiveFrame(data.publicUrl);
 			triggerPopup("Berhasil!", "Frame berhasil di-upload.", "success");
@@ -104,7 +97,6 @@ function App() {
 
 	const isFormComplete = campaignTitle.trim() !== "" && campaignCaption.trim() !== "" && activeFrame !== EMPTY_FRAME && !isUploadingFrame;
 
-	// --- SIMPAN KE DATABASE & GENERATE LINK ---
 	const generateLinkProcess = async () => {
 		if (!isFormComplete) return;
 		setIsLinkModalOpen(true);
@@ -112,7 +104,6 @@ function App() {
 		setIsCopied(false);
 		setGeneratedLink("");
 
-		// Simpan data ke tabel 'campaigns'
 		const { data, error } = await supabase.from('campaigns').insert([
 			{ 
 				title: campaignTitle, 
@@ -125,7 +116,6 @@ function App() {
 			triggerPopup("Gagal", "Gagal menyimpan ke database.", "error");
 			setIsLinkModalOpen(false);
 		} else {
-			// Bikin link pake ID dari Supabase
 			const shareUrl = `${window.location.origin}/?id=${data.id}&pro=${isPremium}`;
 			setGeneratedLink(shareUrl);
 		}
@@ -286,7 +276,7 @@ function App() {
 					<div className="p-5 flex-1">
 						{sidebarState == "landing" && <LandingPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} />}
 						{sidebarState == "adjust" && <AdjustPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} transform={photoTransform} setTransform={setPhotoTransform} onGenerate={setSidebarState} />}
-						{sidebarState == "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} />}
+						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} />}
 					</div>
 				</div>
 			</div>
