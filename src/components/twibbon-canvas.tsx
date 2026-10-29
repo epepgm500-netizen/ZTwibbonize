@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 
-type TransformType = {
-	x: number;
-	y: number;
-	scale: number;
-	rotate: number;
-};
-
+type TransformType = { x: number; y: number; scale: number; rotate: number; };
 type CanvasProps = {
 	isEditMode: boolean;
 	transform: TransformType;
@@ -17,14 +11,19 @@ type CanvasProps = {
 };
 
 export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMode, setTransform, canvasRef }: CanvasProps) {
-	const size = 500;
+	const size = 1000; // Resolusi HD
 	const frameRef = useRef(new Image());
 
 	function draw() {
 		const canvas = canvasRef?.current;
 		if (!canvas) return;
-
 		const ctx = canvas.getContext("2d");
+		
+		if (ctx) {
+			ctx.imageSmoothingEnabled = true;
+			ctx.imageSmoothingQuality = "high";
+		}
+
 		ctx?.clearRect(0, 0, size, size);
 
 		if (userPhoto) {
@@ -49,34 +48,26 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 	const lastPos = useRef({ x: 0, y: 0 });
 
 	function handleDragDown(e: React.PointerEvent<HTMLCanvasElement>) {
-		if (!isEditMode) return;
+		if (!isEditMode || !userPhoto) return;
 		isDragging.current = true;
 		lastPos.current = { x: e.clientX, y: e.clientY };
 		e.currentTarget.setPointerCapture(e.pointerId);
 	}
 
 	function handleDragMove(e: React.PointerEvent<HTMLCanvasElement>) {
-		if (!isEditMode) return;
-		if (!isDragging.current) return;
-
+		if (!isEditMode || !isDragging.current || !userPhoto) return;
 		const dx = e.clientX - lastPos.current.x;
 		const dy = e.clientY - lastPos.current.y;
 		lastPos.current = { x: e.clientX, y: e.clientY };
-
 		const canvas = canvasRef.current!;
 		const ratio = canvas.width / canvas.clientWidth;
-
-		setTransform((prev) => ({
-			...prev,
-			x: prev.x + dx * ratio,
-			y: prev.y + dy * ratio,
-		}));
+		setTransform((prev) => ({ ...prev, x: prev.x + dx * ratio, y: prev.y + dy * ratio }));
 	}
 
 	function handleDragUp() {
-		if (!isEditMode) return;
+		if (!isEditMode || !userPhoto) return;
 		isDragging.current = false;
 	}
 
-	return <canvas ref={canvasRef} width={size} height={size} className={`w-full h-auto ${isEditMode && "cursor-move"}`} onPointerDown={handleDragDown} onPointerMove={handleDragMove} onPointerUp={handleDragUp} />;
+	return <canvas ref={canvasRef} width={size} height={size} className={`w-full h-auto bg-white/5 ${isEditMode && userPhoto ? "cursor-move" : "cursor-default"}`} onPointerDown={handleDragDown} onPointerMove={handleDragMove} onPointerUp={handleDragUp} />;
 }

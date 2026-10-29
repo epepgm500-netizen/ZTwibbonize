@@ -4,23 +4,18 @@ export default function LandingPageSidebar({ onPhotoSelected }: { onPhotoSelecte
 	function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
 		const file = e.target.files?.[0];
 		if (!file) return;
-
 		const img = new Image();
 		img.onload = () => onPhotoSelected(img);
 		img.src = URL.createObjectURL(file);
 	}
 
 	return (
-		<section className="h-[24em] p-5 w-full flex flex-col gap-3 justify-between ">
-			<article>
-				<h1 className="lg:text-4xl text-2xl font-semibold mb-5">FancyEvent Twibbon</h1>
-				<p className="text-xl">Join our event and invite those around you to join in the fun!</p>
-			</article>
-			<div className="*:cursor-pointer bg-purple-700 p-5 relative text-white rounded-xl w-fit">
-				<input onChange={handleUpload} accept="image/png, image/jpeg, image/jpg, image/svg, image/webp" type="file" className="absolute inset-0 z-10 opacity-0" />
-				<h3 className="flex items-center gap-3 font-semibold">
-					<Camera />
-					Upload your photo
+		<section className="h-full flex flex-col gap-4 justify-center mt-4">
+			<div className="relative cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 p-4 text-white rounded-xl w-full text-center shadow-lg hover:scale-[1.02] transition-transform">
+				<input onChange={handleUpload} accept="image/*" type="file" className="absolute inset-0 z-10 opacity-0 cursor-pointer" />
+				<h3 className="flex items-center justify-center gap-2 font-bold text-sm">
+					<Camera size={18} />
+					Upload Foto Lu
 				</h3>
 			</div>
 		</section>

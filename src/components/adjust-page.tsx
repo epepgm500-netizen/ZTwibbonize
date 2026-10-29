@@ -1,12 +1,6 @@
 import { Camera, CircleArrowRight } from "lucide-react";
 
-type TransformType = {
-	x: number;
-	y: number;
-	scale: number;
-	rotate: number;
-};
-
+type TransformType = { x: number; y: number; scale: number; rotate: number; };
 type AdjustPageProps = {
 	transform: TransformType;
 	setTransform: React.Dispatch<React.SetStateAction<TransformType>>;
@@ -18,47 +12,32 @@ export default function AdjustPageSidebar({ transform, setTransform, onPhotoSele
 	function handleChangePhoto(e: React.ChangeEvent<HTMLInputElement>) {
 		const file = e.target.files?.[0];
 		if (!file) return;
-
 		const img = new Image();
 		img.onload = () => onPhotoSelected(img);
 		img.src = URL.createObjectURL(file);
 	}
 
 	return (
-		<section className="h-[24em] p-5 w-full flex flex-col gap-3 justify-between ">
-			<article>
-				<h1 className="lg:text-4xl text-2xl font-semibold mb-5">Adjust your photo</h1>
-			</article>
-			<ul>
-				<li className="outline outline-gray-600/50 my-3 rounded-md text-center shadow-xl p-5 w-full">
-					<label htmlFor="scale" className="font-semibold">
-						Scale ({transform.scale} %)
-					</label>
-					<br />
-					<input type="range" className="w-full accent-purple-800" value={transform.scale} onChange={(e) => setTransform((t) => ({ ...t, scale: +e.target.value }))} min={0} max={200} id="scale" name="scale" />
-				</li>
-				<li className="outline outline-gray-600/50 my-3 rounded-md text-center shadow-xl p-5 w-full">
-					<label htmlFor="rotate" className="font-semibold">
-						Rotate ({transform.rotate} deg)
-					</label>
-					<br />
-					<input type="range" className="w-full accent-purple-800" value={transform.rotate} min={-180} max={180} onChange={(e) => setTransform((t) => ({ ...t, rotate: +e.target.value }))} id="rotate" name="rotate" />
-				</li>
-			</ul>
-			<div className="w-full   *:grow flex gap-2 font-semibold">
-				<div className="*:cursor-pointer border-purple-700 border p-3 relative text-purple-900 rounded-xl w-fit">
-					<input onChange={handleChangePhoto} type="file" className="absolute inset-0 z-10 opacity-0" />
-					<h3 className="flex justify-center items-center gap-3">
-						<Camera />
-						Change photo
-					</h3>
+		<section className="h-full flex flex-col gap-4 justify-between mt-4">
+			<div className="flex flex-col gap-3">
+				<div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+					<label className="font-bold text-xs text-gray-700 flex justify-between mb-1"><span>Zoom</span> <span className="text-pink-600">{transform.scale}%</span></label>
+					<input type="range" className="w-full accent-pink-500" value={transform.scale} onChange={(e) => setTransform((t) => ({ ...t, scale: +e.target.value }))} min={0} max={200} />
 				</div>
-				<div className="*:cursor-pointer bg-purple-700 p-3 relative text-white rounded-xl w-fit">
-					<button onClick={() => onGenerate("ready")} className="absolute inset-0 z-10 opacity-0" />
-					<h3 className="flex justify-center items-center gap-3">
-						<CircleArrowRight />
-						Next
-					</h3>
+				<div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+					<label className="font-bold text-xs text-gray-700 flex justify-between mb-1"><span>Putar</span> <span className="text-pink-600">{transform.rotate}°</span></label>
+					<input type="range" className="w-full accent-pink-500" value={transform.rotate} min={-180} max={180} onChange={(e) => setTransform((t) => ({ ...t, rotate: +e.target.value }))} />
+				</div>
+			</div>
+
+			<div className="flex gap-2 font-bold mt-2">
+				<div className="flex-1 cursor-pointer border border-gray-300 bg-white hover:bg-gray-50 p-2 relative text-gray-700 rounded-lg text-center text-xs">
+					<input onChange={handleChangePhoto} type="file" className="absolute inset-0 z-10 opacity-0 cursor-pointer" />
+					<h3 className="flex justify-center items-center gap-1"><Camera size={14} /> Ganti</h3>
+				</div>
+				<div className="flex-1 cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 p-2 relative text-white rounded-lg text-center text-xs shadow-md">
+					<button onClick={() => onGenerate("ready")} className="absolute inset-0 z-10 opacity-0 cursor-pointer" />
+					<h3 className="flex justify-center items-center gap-1">Lanjut <CircleArrowRight size={14} /></h3>
 				</div>
 			</div>
 		</section>

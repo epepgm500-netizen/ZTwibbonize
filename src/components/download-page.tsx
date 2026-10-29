@@ -1,88 +1,45 @@
 import { useState } from "react";
-import { ArrowDownToLine, SquarePen, Clipboard, ClipboardCheck } from "lucide-react";
-import campaignData from "../campaign-data.json";
+import { ArrowDownToLine } from "lucide-react";
 
-type CaptionType = Record<string, string>;
-const { caption, props: captionProps } = campaignData;
-
-function fillCaption(template: string, values: CaptionType) {
-	return template.replace(/\[(\w+)\]/g, (_, key) => values[key]?.trim() || `[${key}]`);
-}
-
-export default function DownloadPageSidebar({ canvas }: { canvas: React.RefObject<HTMLCanvasElement | null> }) {
-	const [isEdit, setIsEdit] = useState(false);
-	const [captionValues, setCapValues] = useState<CaptionType>(() => Object.fromEntries(captionProps.map((key) => [key, ""])));
-	const [isCopied, setIsCopied] = useState(false);
-
-	const filledCaption = fillCaption(caption, captionValues);
+export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean }) {
+	const [name, setName] = useState("");
+	const [school, setSchool] = useState("");
 
 	function handleDownloadCanvas(canvas: React.RefObject<HTMLCanvasElement | null>, filename: string) {
 		if (!canvas.current) return;
-		const dataUrl = canvas.current.toDataURL("image/png");
+		
+		if (!isPremium) {
+			const ctx = canvas.current.getContext("2d");
+			if (ctx) {
+				ctx.font = "bold 60px sans-serif"; 
+				ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+				ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+				ctx.lineWidth = 8;
+				ctx.textAlign = "right";
+				ctx.textBaseline = "bottom";
+				ctx.strokeText("ZTwibbon Free", canvas.current.width - 40, canvas.current.height - 40);
+				ctx.fillText("ZTwibbon Free", canvas.current.width - 40, canvas.current.height - 40);
+			}
+		}
+
+		const dataUrl = canvas.current.toDataURL("image/png", 1.0);
 		const link = document.createElement("a");
 		link.href = dataUrl;
 		link.download = filename;
 		link.click();
 	}
 
-	function handleCopyCaption() {
-		setIsCopied(true);
-		navigator.clipboard.writeText(filledCaption);
-		setTimeout(() => {
-			setIsCopied(false);
-		}, 3000);
-	}
-
 	return (
-		<section className="h-[24em] p-5 w-full relative flex flex-col gap-3 justify-between ">
-			{isEdit && (
-				<div className="bg-black/50 fixed z-40 inset-0 flex justify-center items-center">
-					<div className="bg-white p-5 rounded-md">
-						<h2 className="font-semibold text-xl">Adjust caption</h2>
-						<ul className="*:flex *:justify-between *:items-center flex flex-col gap-3">
-							{captionProps.map((prop, idx) => (
-								<li key={idx}>
-									<label htmlFor={prop}>{prop}</label>
-									<input type="text" name={prop} id={prop} className="outline-none border-b ml-3" onChange={(e) => setCapValues((prev) => ({ ...prev, [prop]: e.target.value }))} />
-								</li>
-							))}
-						</ul>
-						<button onClick={() => setIsEdit(false)} className="cursor-pointer py-2 px-3 rounded-md bg-gray-800 text-white font-semibold mt-5">
-							Done
-						</button>
-					</div>
-				</div>
-			)}
+		<section className="flex flex-col gap-4 mt-6">
+			<div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+				<label className="block text-xs font-bold text-gray-600 mb-2">Isi Caption Lu:</label>
+				<input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama Lu" className="w-full border p-2 rounded mb-2 text-sm" />
+				<input type="text" value={school} onChange={(e) => setSchool(e.target.value)} placeholder="Asal Sekolah" className="w-full border p-2 rounded text-sm" />
+			</div>
 
-			<article>
-				<h1 className="lg:text-4xl text-2xl  font-semibold mb-5">Ready to share!</h1>
-				<div className="flex flex-col gap-3">
-					Caption:
-					<p className="p-2 border rounded-md border-gray-600/50">{filledCaption} </p>
-					<div className="flex *:grow gap-3 text-xs lg:text-base w-full">
-						<button onClick={() => handleCopyCaption()} className="bg-purple-700 text-white flex justify-center items-center p-3 gap-2 rounded-md  cursor-pointer">
-							{isCopied ? (
-								<>
-									<ClipboardCheck />
-									Copied!
-								</>
-							) : (
-								<>
-									<Clipboard />
-									Copy Caption
-								</>
-							)}
-						</button>
-						<button onClick={() => setIsEdit(true)} className="bg-purple-700 text-white flex justify-center items-center p-3 gap-2 rounded-md  cursor-pointer">
-							<SquarePen />
-							Edit Caption
-						</button>
-					</div>
-				</div>
-			</article>
-			<button onClick={() => handleDownloadCanvas(canvas, "fancy-twibbon.png")} className="flex items-center gap-2 font-semibold cursor-pointer bg-purple-700 p-5 text-white rounded-xl md:w-fit w-full">
-				<ArrowDownToLine />
-				Download Image
+			<button onClick={() => handleDownloadCanvas(canvas, "twibbon-hd.png")} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 p-4 text-white rounded-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_30px_rgba(236,72,153,0.5)] hover:-translate-y-1 transition-all text-sm uppercase tracking-wide">
+				<ArrowDownToLine size={20} />
+				Download Gambar HD
 			</button>
 		</section>
 	);
