@@ -13,7 +13,6 @@ const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAA
 const ADMIN_PASSWORD = "ZIEADMIN"; // GANTI PASSWORD ADMIN DI SINI
 
 function App() {
-	// State Aplikasi Utama
 	const [appState, setAppState] = useState<"home" | "editor">("home");
 	const [isPremium, setIsPremium] = useState(false);
 	const [keyInput, setKeyInput] = useState("");
@@ -45,7 +44,6 @@ function App() {
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [showPngInfo, setShowPngInfo] = useState(false);
 
-	// State Admin
 	const [isAdminMode, setIsAdminMode] = useState(false);
 	const [adminPass, setAdminPass] = useState("");
 	const [isAdminLogged, setIsAdminLogged] = useState(false);
@@ -84,7 +82,6 @@ function App() {
 		}
 	}, [isAdminMode]);
 
-	// TIMER MUNDUR
 	useEffect(() => {
 		if (!isPremium || !isModeratorMode) return;
 		const savedExpiry = localStorage.getItem("ztwibbon_expiry");
@@ -125,10 +122,10 @@ function App() {
 		const { error } = await supabase.from('license_keys').insert([{ key_code: newKeyName, duration_hours: dur }]);
 		
 		if (error) {
-			if (error.code === '23505') { // Kode error Supabase untuk Duplikat (Unique Violation)
+			if (error.code === '23505') {
 				triggerPopup("Key Duplikat", "Nama key ini udah ada di database. Coba pakai nama lain.", "error");
 			} else {
-				triggerPopup("Error", "Gagal simpan key. Cek koneksi.", "error");
+				triggerPopup("Error", "Gagal simpan key. Cek koneksi / Izin Supabase.", "error");
 			}
 		} else {
 			triggerPopup("Sukses", "Key baru berhasil dibuat!", "success");
@@ -211,59 +208,56 @@ function App() {
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
 		const color = popup.type === 'error' ? 'text-red-500' : (popup.type === 'success' ? 'text-green-500' : 'text-blue-500');
 		return (
-			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300 p-4">
-				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in-95 duration-300">
-					<div className={`mb-4 flex justify-center ${color} ${popup.type === 'error' ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-						<Icon size={64} />
-					</div>
-					<h2 className={`text-2xl font-black mb-2 tracking-tight ${color}`}>{popup.title}</h2>
+			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4">
+				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full">
+					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
+					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
-					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors active:scale-95">Mengerti</button>
+					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Mengerti</button>
 				</div>
 			</div>
 		);
 	};
 
-	// --- HALAMAN ADMIN ---
+	// --- ADMIN PANEL ---
 	if (isAdminMode) {
 		if (!isAdminLogged) {
 			return (
-				<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] p-4 animate-in fade-in duration-500">
+				<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] p-4">
 					<CustomPopup />
-					<div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-600 rounded-full blur-[150px] opacity-20"></div>
-					<div className="bg-[#1a1d24] p-8 rounded-3xl border border-white/10 shadow-2xl text-center w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-500">
-						<ShieldAlert size={48} className="mx-auto text-pink-500 mb-4 animate-pulse" />
+					<div className="bg-[#1a1d24] p-8 rounded-3xl border border-white/10 shadow-2xl text-center w-full max-w-sm relative z-10">
+						<ShieldAlert size={48} className="mx-auto text-pink-500 mb-4" />
 						<h2 className="text-2xl font-bold text-white mb-6">Admin Login</h2>
-						<input type="password" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} placeholder="Password Admin" className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-white mb-4 text-center focus:border-pink-500 outline-none transition-all" />
-						<button onClick={handleAdminLogin} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-all">Masuk</button>
+						<input type="password" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} placeholder="Password Admin" className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-white mb-4 text-center focus:border-pink-500 outline-none" />
+						<button onClick={handleAdminLogin} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-3 rounded-xl">Masuk</button>
 					</div>
 				</main>
 			);
 		}
 
 		return (
-			<main className="w-screen min-h-screen bg-[#0f172a] p-4 md:p-10 font-sans animate-in fade-in duration-500">
+			<main className="w-screen min-h-screen bg-[#0f172a] p-4 md:p-10 font-sans">
 				<CustomPopup />
 				<div className="max-w-5xl mx-auto">
-					<div className="flex justify-between items-center mb-8 animate-in slide-in-from-top duration-500">
+					<div className="flex justify-between items-center mb-8">
 						<h1 className="text-3xl font-bold text-white flex items-center gap-2"><Key className="text-pink-500"/> License Manager</h1>
-						<button onClick={() => setIsAdminMode(false)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm transition-colors border border-white/10">Ke Web Utama</button>
+						<button onClick={() => setIsAdminMode(false)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm border border-white/10">Ke Web Utama</button>
 					</div>
 
-					<div className="bg-[#1a1d24] p-6 rounded-2xl border border-white/10 mb-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl animate-in slide-in-from-bottom duration-500">
+					<div className="bg-[#1a1d24] p-6 rounded-2xl border border-white/10 mb-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl">
 						<div className="flex-1 w-full">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Nama Key Baru</label>
-							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Contoh: PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none transition-all" />
+							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Contoh: PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
 						<div className="w-full md:w-48">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Durasi (Jam)</label>
-							<input type="number" value={newKeyDuration} onChange={(e) => setNewKeyDuration(e.target.value)} placeholder="24" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none transition-all" />
+							<input type="number" value={newKeyDuration} onChange={(e) => setNewKeyDuration(e.target.value)} placeholder="24" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
-						<button onClick={handleGenerateKey} className="w-full md:w-auto bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all"><Plus size={18}/> Generate</button>
+						<button onClick={handleGenerateKey} className="w-full md:w-auto bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg"><Plus size={18}/> Generate</button>
 					</div>
 
-					<div className="bg-[#1a1d24] rounded-2xl border border-white/10 overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-700">
-						<table className="w-full text-left text-white">
+					<div className="bg-[#1a1d24] rounded-2xl border border-white/10 overflow-x-auto shadow-2xl">
+						<table className="w-full text-left text-white min-w-[600px]">
 							<thead className="bg-white/5 border-b border-white/10">
 								<tr>
 									<th className="p-4 font-bold text-sm">Key</th>
@@ -274,7 +268,7 @@ function App() {
 							</thead>
 							<tbody>
 								{allKeys.map(k => (
-									<tr key={k.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors">
+									<tr key={k.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
 										<td className="p-4 font-mono">{k.key_code}</td>
 										<td className="p-4 text-sm text-gray-400">{k.duration_hours} Jam</td>
 										<td className="p-4">
@@ -283,8 +277,8 @@ function App() {
 											</span>
 										</td>
 										<td className="p-4 flex justify-end gap-2">
-											<button onClick={() => handleToggleKey(k.id, k.is_active)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="On/Off"><Power size={16}/></button>
-											<button onClick={() => handleDeleteKey(k.id)} className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500/40 rounded-lg transition-colors" title="Hapus"><Trash2 size={16}/></button>
+											<button onClick={() => handleToggleKey(k.id, k.is_active)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg"><Power size={16}/></button>
+											<button onClick={() => handleDeleteKey(k.id)} className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500/40 rounded-lg"><Trash2 size={16}/></button>
 										</td>
 									</tr>
 								))}
@@ -296,23 +290,24 @@ function App() {
 		);
 	}
 
-	// --- HALAMAN AWAL (HOME) ---
+	// --- HOME ---
 	if (appState === "home") {
 		return (
 			<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] relative overflow-hidden font-sans">
 				<CustomPopup />
 				{showMaintenance && (
-					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/70 backdrop-blur-lg p-4 animate-in fade-in duration-300">
-						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4 animate-in zoom-in-95 duration-300">
+					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4">
+						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
 							<Lock size={64} className="mx-auto text-gray-800 mb-4 animate-bounce" />
 							<h2 className="text-3xl font-black text-gray-800 mb-3">MAINTENANCE</h2>
-							<button onClick={() => setShowMaintenance(false)} className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl mt-4">Mengerti</button>
+							<p className="text-gray-500 mb-6">Versi Free lagi dibenerin. Segera hadir ya!</p>
+							<button onClick={() => setShowMaintenance(false)} className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl">Mengerti</button>
 						</div>
 					</div>
 				)}
 				{showPngInfo && (
-					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/70 backdrop-blur-lg p-4 animate-in fade-in duration-300">
-						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4 animate-in zoom-in-95 duration-300">
+					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4">
+						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
 							<CheckCircle2 size={64} className="mx-auto text-pink-500 mb-4 animate-bounce" />
 							<h2 className="text-2xl font-black text-gray-800 mb-3">Berhasil!</h2>
 							<p className="text-gray-500 mb-6">Pastikan Frame Twibbon yang kamu upload berformat <strong>.PNG (No Background)</strong> ya!</p>
@@ -320,23 +315,23 @@ function App() {
 						</div>
 					</div>
 				)}
-				<div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-600 rounded-full blur-[150px] opacity-20"></div>
-				<div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px] opacity-20"></div>
+				<div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+				<div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
 				
-				<div className="relative z-10 text-center mb-16 animate-in slide-in-from-top duration-700">
-					<h1 className="text-6xl font-extrabold text-white mb-6 tracking-tight drop-shadow-2xl">ZTwibbon <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">PRO</span></h1>
+				<div className="relative z-10 text-center mb-16">
+					<h1 className="text-6xl font-extrabold text-white mb-6 drop-shadow-2xl">ZTwibbon <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">PRO</span></h1>
 					<p className="text-gray-400 text-lg">Bikin twibbon keren tanpa watermark.</p>
 				</div>
 				
 				<div className="relative z-10 flex flex-col md:flex-row gap-8 w-full max-w-4xl px-6">
-					<div onClick={() => setShowMaintenance(true)} className="flex-1 bg-gradient-to-b from-gray-500/10 to-gray-500/5 backdrop-blur-xl border border-gray-500/30 p-10 rounded-[2rem] shadow-[0_0_40px_rgba(156,163,175,0.15)] text-center transition-all duration-500 hover:scale-110 hover:-translate-y-4 hover:shadow-[0_0_80px_rgba(156,163,175,0.6)] hover:border-gray-500/80 group relative z-20 cursor-pointer grayscale opacity-50">
-						<div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-gray-600 to-gray-400 text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg tracking-widest">COMING SOON</div>
+					<div onClick={() => setShowMaintenance(true)} className="flex-1 bg-gradient-to-b from-gray-500/10 to-gray-500/5 backdrop-blur-xl border border-gray-500/30 p-10 rounded-[2rem] shadow-xl text-center transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:border-gray-400 group relative z-20 cursor-pointer grayscale opacity-50">
+						<div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-gray-600 to-gray-400 text-white text-xs font-bold px-6 py-1.5 rounded-full tracking-widest">COMING SOON</div>
 						<div className="mb-6 flex justify-center text-gray-400"><Lock size={48} /></div>
 						<h2 className="text-3xl font-bold text-gray-400 mb-3">Versi Free</h2>
 					</div>
 
-					<div className="flex-1 bg-gradient-to-b from-pink-500/10 to-purple-500/5 backdrop-blur-xl border border-pink-500/30 p-10 rounded-[2rem] shadow-[0_0_40px_rgba(236,72,153,0.15)] text-center transition-all duration-500 hover:scale-110 hover:-translate-y-4 hover:shadow-[0_0_80px_rgba(236,72,153,0.6)] hover:border-pink-500/80 group relative z-20">
-						<div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg tracking-widest">PALING LARIS</div>
+					<div className="flex-1 bg-gradient-to-b from-pink-500/10 to-purple-500/5 backdrop-blur-xl border border-pink-500/30 p-10 rounded-[2rem] shadow-xl text-center transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(236,72,153,0.5)] hover:border-pink-400 group relative z-20">
+						<div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold px-6 py-1.5 rounded-full tracking-widest">PALING LARIS</div>
 						<div className="mb-6 flex justify-center text-yellow-400"><Crown size={56} /></div>
 						<h2 className="text-3xl font-bold text-white mb-3">Versi PRO</h2>
 						
@@ -345,11 +340,11 @@ function App() {
 						)}
 
 						<div className="relative w-full mb-4">
-							<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none transition-all placeholder-gray-500" placeholder="Masukin Key PRO" />
-							<button onClick={() => setShowKey(!showKey)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
+							<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none placeholder-gray-500" placeholder="Masukin Key PRO" />
+							<button onClick={() => setShowKey(!showKey)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
 						</div>
 						
-						<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_40px_rgba(236,72,153,0.8)] transition-all uppercase tracking-wider">Aktifkan</button>
+						<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">Aktifkan</button>
 					</div>
 				</div>
 				<Analytics />
@@ -357,9 +352,9 @@ function App() {
 		);
 	}
 
-	// --- HALAMAN EDITOR ---
+	// --- EDITOR ---
 	return (
-		<main className="w-screen h-screen bg-[#0f1115] flex flex-col font-sans overflow-hidden animate-in fade-in duration-500">
+		<main className="w-screen h-screen bg-[#0f1115] flex flex-col font-sans overflow-hidden">
 			<CustomPopup />
 			<nav className="w-full h-16 bg-[#1a1d24] border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-20 shrink-0">
 				<div className="flex items-center gap-2 cursor-pointer" onClick={() => setAppState("home")}>
@@ -375,26 +370,26 @@ function App() {
 				<div className="flex-1 flex flex-col justify-center items-center p-4 md:p-10 relative overflow-y-auto">
 					<div className="relative z-10 max-h-[60vh] md:max-h-[80vh] aspect-square flex justify-center items-center">
 						<TwibbonCanvas userPhoto={userPhoto} frameSrc={activeFrame} transform={photoTransform} setTransform={setPhotoTransform} isEditMode={sidebarState == "adjust"} canvasRef={canvasRef} />
-						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto lu di panel kanan ⬇️</p></div>}
+						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl pointer-events-none"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto lu di panel kanan ⬇️</p></div>}
 					</div>
 				</div>
 				<div className="w-full md:w-[400px] bg-[#1a1d24] border-t md:border-t-0 md:border-l border-white/10 flex flex-col z-10 shadow-2xl h-[50vh] md:h-auto overflow-y-auto shrink-0">
 					{isModeratorMode && (
-						<div className="p-5 border-b border-white/5 bg-white/[0.02] animate-in slide-in-from-right duration-500">
+						<div className="p-5 border-b border-white/5 bg-white/[0.02]">
 							<h3 className="text-sm font-bold text-white mb-4">Pengaturan Event</h3>
 							<label className="block text-[10px] text-gray-400 uppercase mb-1">Judul Event</label>
-							{isTitleSet ? <div className="flex justify-between bg-black/30 p-3 rounded-xl mb-4 text-sm text-white">{campaignTitle} <button onClick={() => setIsTitleSet(false)} className="text-pink-400">Edit</button></div> : <div className="flex gap-2 mb-4"><input type="text" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} placeholder="Judul" className="w-full bg-black/30 p-3 rounded-xl text-sm text-white focus:border-pink-500 outline-none" /><button onClick={() => { if(tempTitle) { setCampaignTitle(tempTitle); setIsTitleSet(true); } }} className="bg-pink-600 px-4 rounded-xl text-white text-xs hover:bg-pink-500 transition-colors">Set</button></div>}
+							{isTitleSet ? <div className="flex justify-between bg-black/30 p-3 rounded-xl mb-4 text-sm text-white">{campaignTitle} <button onClick={() => setIsTitleSet(false)} className="text-pink-400">Edit</button></div> : <div className="flex gap-2 mb-4"><input type="text" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} placeholder="Judul" className="w-full bg-black/30 p-3 rounded-xl text-sm text-white focus:border-pink-500 outline-none" /><button onClick={() => { if(tempTitle) { setCampaignTitle(tempTitle); setIsTitleSet(true); } }} className="bg-pink-600 px-4 rounded-xl text-white text-xs">Set</button></div>}
 							<label className="block text-[10px] text-gray-400 uppercase mb-1">Caption Bawaan</label>
-							{isCaptionSet ? <div className="flex justify-between bg-black/30 p-3 rounded-xl mb-4 text-sm text-white">{campaignCaption} <button onClick={() => setIsCaptionSet(false)} className="text-pink-400">Edit</button></div> : <div className="flex gap-2 mb-4"><input type="text" value={tempCaption} onChange={(e) => setTempCaption(e.target.value)} placeholder="Caption" className="w-full bg-black/30 p-3 rounded-xl text-sm text-white focus:border-pink-500 outline-none" /><button onClick={() => { if(tempCaption) { setCampaignCaption(tempCaption); setIsCaptionSet(true); } }} className="bg-pink-600 px-4 rounded-xl text-white text-xs hover:bg-pink-500 transition-colors">Set</button></div>}
+							{isCaptionSet ? <div className="flex justify-between bg-black/30 p-3 rounded-xl mb-4 text-sm text-white">{campaignCaption} <button onClick={() => setIsCaptionSet(false)} className="text-pink-400">Edit</button></div> : <div className="flex gap-2 mb-4"><input type="text" value={tempCaption} onChange={(e) => setTempCaption(e.target.value)} placeholder="Caption" className="w-full bg-black/30 p-3 rounded-xl text-sm text-white focus:border-pink-500 outline-none" /><button onClick={() => { if(tempCaption) { setCampaignCaption(tempCaption); setIsCaptionSet(true); } }} className="bg-pink-600 px-4 rounded-xl text-white text-xs">Set</button></div>}
 							<label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-pink-500/30 rounded-xl cursor-pointer bg-pink-500/5 mb-4 hover:bg-pink-500/10 transition-colors">
 								<p className="text-xs text-pink-300 font-semibold">{isUploadingFrame ? "Mengunggah..." : (activeFrame === EMPTY_FRAME ? "Upload Frame PNG" : "Ganti Frame")}</p>
 								<input type="file" accept="image/png" onChange={handleFrameSelect} className="hidden" disabled={isUploadingFrame} />
 							</label>
-							<button onClick={generateLinkProcess} disabled={isGenerating} className={`w-full py-3 rounded-xl text-xs font-bold flex justify-center gap-2 transition-all ${isFormComplete ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg' : 'bg-gray-700 text-gray-500'}`}><LinkIcon size={14} />{isGenerating ? "Proses..." : "Generate Link"}</button>
+							<button onClick={generateLinkProcess} disabled={isGenerating} className={`w-full py-3 rounded-xl text-xs font-bold flex justify-center gap-2 ${isFormComplete ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg' : 'bg-gray-700 text-gray-500'}`}><LinkIcon size={14} />{isGenerating ? "Proses..." : "Generate Link"}</button>
 							{generatedLink && (
 								<div className="mt-4 p-3 bg-black/40 border border-white/10 rounded-xl flex gap-2">
 									<input type="text" readOnly value={generatedLink} className="w-full bg-transparent text-xs text-white outline-none" />
-									<button onClick={handleCopyLink} className="bg-pink-600 p-2 rounded-lg text-white hover:bg-pink-500 transition-colors">{isCopied ? <CheckCircle2 size={14} /> : <LinkIcon size={14} />}</button>
+									<button onClick={handleCopyLink} className="bg-pink-600 p-2 rounded-lg text-white">{isCopied ? <CheckCircle2 size={14} /> : <LinkIcon size={14} />}</button>
 								</div>
 							)}
 						</div>
