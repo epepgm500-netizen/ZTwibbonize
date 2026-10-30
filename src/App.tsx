@@ -5,7 +5,7 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -13,6 +13,7 @@ function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
 	const [isPremium, setIsPremium] = useState(false);
 	const [keyInput, setKeyInput] = useState("");
+	const [showKey, setShowKey] = useState(false); // State buat ikon mata
 	
 	const [sidebarState, setSidebarState] = useState<"landing" | "adjust" | "ready">("landing");
 	const [userPhoto, setUserPhoto] = useState<HTMLImageElement | null>(null);
@@ -64,7 +65,7 @@ function App() {
 			setIsModeratorMode(true);
 			setAppState("editor");
 		} else { 
-			triggerPopup("Akses Ditolak", "Key Pro yang lu masukin salah.", "error");
+			triggerPopup("Akses Ditolak", "Key Pro yang lu masukin salah. Coba cek lagi!", "error");
 		}
 	};
 
@@ -169,7 +170,23 @@ function App() {
 						<div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg tracking-widest">PALING LARIS</div>
 						<div className="mb-6 flex justify-center text-yellow-400"><Crown size={56} /></div>
 						<h2 className="text-3xl font-bold text-white mb-3">Versi PRO</h2>
-						<input type="password" value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-center text-white mb-4 text-sm focus:outline-none focus:border-pink-500 transition-all placeholder-gray-500" placeholder="Masukin Key PRO" />
+						
+						<div className="relative w-full mb-4">
+							<input 
+								type={showKey ? "text" : "password"} 
+								value={keyInput} 
+								onChange={(e) => setKeyInput(e.target.value)} 
+								className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white text-sm focus:outline-none focus:border-pink-500 transition-all placeholder-gray-500" 
+								placeholder="Masukin Key PRO" 
+							/>
+							<button 
+								onClick={() => setShowKey(!showKey)} 
+								className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+							>
+								{showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+							</button>
+						</div>
+						
 						<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_40px_rgba(236,72,153,0.8)] transition-all uppercase tracking-wider">Aktifkan</button>
 					</div>
 				</div>

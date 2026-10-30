@@ -14,18 +14,16 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 	const size = 1000;
 	const [safeFrame, setSafeFrame] = useState<HTMLImageElement | null>(null);
 
-	// 1. Bypass CORS: Ubah URL gambar jadi Base64 (Data URL)
+	// 1. Bypass CORS: Ubah URL gambar jadi Base64
 	useEffect(() => {
 		if (!frameSrc) return;
 		let isMounted = true;
 
 		if (frameSrc.startsWith("data:")) {
-			// Kalau udah base64, langsung load
 			const img = new Image();
 			img.onload = () => { if (isMounted) setSafeFrame(img); };
 			img.src = frameSrc;
 		} else {
-			// Kalau dari Supabase (URL), ubah ke Base64 dulu via Canvas
 			const img = new Image();
 			img.crossOrigin = "anonymous";
 			img.onload = () => {
@@ -36,7 +34,6 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 				const ctx = tempCanvas.getContext("2d");
 				ctx?.drawImage(img, 0, 0);
 				try {
-					// Trik ngubah gambar jadi Base64 biar aman dari CORS
 					const dataUrl = tempCanvas.toDataURL("image/png");
 					const safeImg = new Image();
 					safeImg.onload = () => { if (isMounted) setSafeFrame(safeImg); };
