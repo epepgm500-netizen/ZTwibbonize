@@ -215,21 +215,24 @@ function App() {
 	};
 
 	const uploadFrameToSupabase = async (): Promise<string | null> => {
-		if (!frameFile) return activeFrame;
-		setIsUploadingFrame(true);
-		const fileExt = frameFile.name.split('.').pop();
-		const fileName = `${Date.now()}.${fileExt}`;
-		const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
-		if (error) { setIsUploadingFrame(false); return null; }
-		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
-		const { data: files } = await supabase.storage.from('frames').list();
-		if (files) {
-			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
-			if (filesToDelete.length > 0) await supabase.storage.from('frames').remove(filesToDelete);
-		}
-		setIsUploadingFrame(false);
-		return data.publicUrl;
-	};
+	if (!frameFile) return activeFrame;
+	setIsUploadingFrame(true);
+	const fileExt = frameFile.name.split('.').pop();
+	const fileName = `${Date.now()}.${fileExt}`;
+	
+	// Cuma upload, jangan hapus file lama biar ga blank
+	const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
+	
+	if (error) { 
+		setIsUploadingFrame(false); 
+		triggerPopup("Error", "Gagal upload gambar ke storage.", "error");
+		return null; 
+	}
+	
+	const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
+	setIsUploadingFrame(false);
+	return data.publicUrl;
+};
 
 	const isFormComplete = isTitleSet && isCaptionSet && activeFrame !== EMPTY_FRAME && !isUploadingFrame;
 
