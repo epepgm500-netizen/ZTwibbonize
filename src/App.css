@@ -7,6 +7,7 @@ body {
 	font-style: normal;
 }
 
+/* ANIMASI MULUS */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px) rotate(-2deg); }
@@ -14,14 +15,9 @@ body {
   75% { transform: translateX(-8px) rotate(-2deg); }
 }
 
-@keyframes slide-in-from-top-5 {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes zoom-in-95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+@keyframes shrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 @keyframes fade-in {
@@ -29,17 +25,12 @@ body {
   to { opacity: 1; }
 }
 
-@keyframes slide-in-from-top {
-  from { transform: translateY(-50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes zoom-in-95 {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .animate-in { animation-fill-mode: both; animation-duration: 0.3s; }
 .fade-in { animation-name: fade-in; }
 .zoom-in-95 { animation-name: zoom-in-95; }
-.slide-in-from-top-5 { animation-name: slide-in-from-top-5; }
-.slide-in-from-top { animation-name: slide-in-from-top; animation-duration: 0.7s; }
-
-.shake-anim {
-  animation: shake 0.5s ease-in-out;
-}
+.shake-anim { animation: shake 0.5s ease-in-out; }

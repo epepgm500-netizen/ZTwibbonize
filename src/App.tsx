@@ -9,7 +9,7 @@ import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, 
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const ADMIN_PASSWORD = "ZIEADMIN";
+const ADMIN_PASSWORD = "ADMINZTWIBBON";
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -146,7 +146,6 @@ function App() {
 		);
 	};
 
-	// Fungsi Ganti Foto Saja (Buat Peserta)
 	const handleResetPhoto = () => {
 		setSidebarState("landing");
 		setUserPhoto(null);
@@ -269,14 +268,14 @@ function App() {
 
 		if (popup.type === 'confirm') {
 			return (
-				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in-95 duration-300">
+				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 animate-in fade-in duration-200">
+					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in-95 duration-200">
 						<div className="mb-4 flex justify-center text-orange-500"><RefreshCcw size={64} /></div>
 						<h2 className="text-2xl font-black mb-2 text-gray-800">{popup.title}</h2>
 						<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
 						<div className="flex gap-2">
 							<button onClick={() => setPopup({ ...popup, show: false })} className="flex-1 bg-gray-200 text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors">Batal</button>
-							<button onClick={() => { setPopup({ ...popup, show: false }); popup.onConfirm?.(); }} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30">Ya, Reset</button>
+							<button onClick={() => { setPopup({ ...popup, show: false }); popup.onConfirm?.(); }} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors">Ya, Reset</button>
 						</div>
 					</div>
 				</div>
@@ -284,8 +283,8 @@ function App() {
 		}
 
 		return (
-			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 animate-in fade-in duration-300">
-				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden animate-in zoom-in-95 duration-300">
+			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 animate-in fade-in duration-200">
+				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden animate-in zoom-in-95 duration-200">
 					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
@@ -382,12 +381,22 @@ function App() {
 			<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] relative overflow-hidden font-sans">
 				<CustomPopup />
 				{showMaintenance && (
-					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4">
+					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-300">
 						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
 							<Lock size={64} className="mx-auto text-gray-800 mb-4 animate-bounce" />
 							<h2 className="text-3xl font-black text-gray-800 mb-3">MAINTENANCE</h2>
 							<p className="text-gray-500 mb-6">Versi Free lagi dibenerin. Segera hadir ya!</p>
 							<button onClick={() => setShowMaintenance(false)} className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl">Mengerti</button>
+						</div>
+					</div>
+				)}
+				{showPngInfo && (
+					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-300">
+						<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
+							<CheckCircle2 size={64} className="mx-auto text-pink-500 mb-4 animate-bounce" />
+							<h2 className="text-2xl font-black text-gray-800 mb-3">Berhasil!</h2>
+							<p className="text-gray-500 mb-6">Pastikan Frame Twibbon yang kamu upload berformat <strong>.PNG (No Background)</strong> ya!</p>
+							<button onClick={() => { setShowPngInfo(false); setAppState("editor"); window.location.reload(); }} className="w-full bg-pink-600 text-white font-bold py-4 rounded-xl">Mengerti</button>
 						</div>
 					</div>
 				)}
@@ -440,7 +449,7 @@ function App() {
 			<CustomPopup />
 
 			{showPngInfo && (
-				<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4">
+				<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-300">
 					<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
 						<CheckCircle2 size={64} className="mx-auto text-pink-500 mb-4 animate-bounce" />
 						<h2 className="text-2xl font-black text-gray-800 mb-3">Berhasil Aktif!</h2>
@@ -451,7 +460,11 @@ function App() {
 			)}
 
 			<nav className="w-full h-16 bg-[#1a1d24] border-b border-white/10 flex items-center justify-between px-4 md:px-8 z-20 shrink-0">
-				<div className="flex items-center gap-2 cursor-pointer" onClick={() => setAppState("home")}>
+				{/* LOGO CUMA BISA DIKLIK KALO MODERATOR */}
+				<div 
+					className={`flex items-center gap-2 ${isModeratorMode ? "cursor-pointer" : ""}`} 
+					onClick={() => isModeratorMode && setAppState("home")}
+				>
 					<div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">Z</div>
 					<span className="font-bold text-white hidden md:block">ZTwibbon PRO</span>
 				</div>
@@ -510,7 +523,7 @@ function App() {
 					<div className="p-5 flex-1">
 						{sidebarState == "landing" && <LandingPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} />}
 						{sidebarState == "adjust" && <AdjustPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} transform={photoTransform} setTransform={setPhotoTransform} onGenerate={setSidebarState} />}
-						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} onReset={isModeratorMode ? handleResetDesign : handleResetPhoto} />}
+						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} onReset={handleResetPhoto} />}
 					</div>
 				</div>
 			</div>
