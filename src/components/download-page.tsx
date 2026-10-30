@@ -7,10 +7,12 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 	const [isCopied, setIsCopied] = useState(false);
 
 	function handleDownloadCanvas() {
-		if (!canvas.current) return;
+		const currentCanvas = canvas.current;
+		if (!currentCanvas) return;
 		
+		// Gambar watermark kalau bukan Premium
 		if (!isPremium) {
-			const ctx = canvas.current.getContext("2d");
+			const ctx = currentCanvas.getContext("2d");
 			if (ctx) {
 				ctx.font = "bold 60px sans-serif"; 
 				ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -18,19 +20,27 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 				ctx.lineWidth = 8;
 				ctx.textAlign = "right";
 				ctx.textBaseline = "bottom";
-				ctx.strokeText("ZTwibbon Free", canvas.current.width - 40, canvas.current.height - 40);
-				ctx.fillText("ZTwibbon Free", canvas.current.width - 40, canvas.current.height - 40);
+				ctx.strokeText("ZTwibbon Free", currentCanvas.width - 40, currentCanvas.height - 40);
+				ctx.fillText("ZTwibbon Free", currentCanvas.width - 40, currentCanvas.height - 40);
 			}
 		}
 
-		// Trik biar ga error pas download
-		const dataUrl = canvas.current.toDataURL("image/png", 1.0);
-		const link = document.createElement("a");
-		link.href = dataUrl;
-		link.download = "twibbon-hd.png";
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+		// Proses Download via Blob
+		currentCanvas.toBlob((blob) => {
+			if (!blob) return;
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `ZTwibbon-${Date.now()}.png`;
+			document.body.appendChild(link);
+			link.click();
+			
+			// Kasih jeda bentar sebelum bersihin link
+			setTimeout(() => {
+				document.body.removeChild(link);
+				URL.revokeObjectURL(url);
+			}, 100);
+		}, "image/png", 1.0);
 	}
 
 	const handleCopy = () => {
@@ -45,7 +55,7 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 				<div className="flex justify-between items-center mb-2">
 					<label className="text-xs font-bold text-gray-600">Caption Twibbon</label>
 					<button onClick={() => setIsEditing(!isEditing)} className="text-[10px] font-bold text-pink-600 hover:text-pink-700 flex items-center gap-1">
-						<Edit3 size={12} /> {isEditing ? "Selesai" : "Edit Caption"}
+						<Edit3 size={12} /> {isEditing ? "Selesai" : "Edit"}
 					</button>
 				</div>
 				
