@@ -13,7 +13,7 @@ function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
 	const [isPremium, setIsPremium] = useState(false);
 	const [keyInput, setKeyInput] = useState("");
-	const [showKey, setShowKey] = useState(false); // State buat ikon mata
+	const [showKey, setShowKey] = useState(false);
 	
 	const [sidebarState, setSidebarState] = useState<"landing" | "adjust" | "ready">("landing");
 	const [userPhoto, setUserPhoto] = useState<HTMLImageElement | null>(null);
@@ -21,6 +21,7 @@ function App() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	
 	const [activeFrame, setActiveFrame] = useState<string>(EMPTY_FRAME);
+	const [frameFile, setFrameFile] = useState<File | null>(null); // Nyimpen file asli sementara
 	const [campaignTitle, setCampaignTitle] = useState("Twibbon Pro Event");
 	const [campaignCaption, setCampaignCaption] = useState("Halo nama saya [name]");
 	const [showMaintenance, setShowMaintenance] = useState(false);
@@ -65,31 +66,57 @@ function App() {
 			setIsModeratorMode(true);
 			setAppState("editor");
 		} else { 
-			triggerPopup("Akses Ditolak", "Key Pro yang lu masukin salah. Coba cek lagi!", "error");
+			triggerPopup("Akses Ditolak", "Key Pro yang lu masukin salah.", "error");
 		}
 	};
 
-	const handleFrameUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+	// 1. PREVIEW GAMBAR (BELUM UPLOAD)
+	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
+		setFrameFile(file);
 		const reader = new FileReader();
-		reader.onload = (event) => { if (event.target?.result) setActiveFrame(event.target.result as string); };
+		reader.onload = (event) => { 
+			if (event.target?.result) setActiveFrame(event.target.result as string); 
+		};
 		reader.readAsDataURL(file);
+	};
+
+	// 2. UPLOAD SAAT KLIK GENERATE (DENGAN HAPUS DUPLIKAT)
+	const uploadFrameToSupabase = async (): Promise<string | null> => {
+		if (!frameFile) return activeFrame;
 
 		setIsUploadingFrame(true);
-		const fileExt = file.name.split('.').pop();
-		const fileName = `${Math.random()}.${fileExt}`;
-		const { error: uploadError } = await supabase.storage.from('frames').upload(fileName, file);
-
+		// Bikin nama file pake timestamp biar unik
+		const fileExt = frameFile.name.split('.').pop();
+		const fileName = `${Date.now()}.${fileExt}`;
+		
+		// Upload
+		const { error: uploadError } = await supabase.storage.from('frames').upload(fileName, frameFile);
+		
 		if (uploadError) {
 			triggerPopup("Gagal Upload", "Gagal upload ke Supabase.", "error");
-		} else {
-			const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
-			setActiveFrame(data.publicUrl);
-			triggerPopup("Berhasil!", "Frame berhasil di-upload.", "success");
+			setIsUploadingFrame(false);
+			return null;
 		}
+
+		// Ambil URL Public
+		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
+
+		// HAPUS FILE DUPLIKAT SEBELUMNYA (Biar ga numpuk)
+		// Cari semua file di bucket, hapus yang namanya selain fileName kita (Opsional: khusus file yang diupload > 1 jam lalu)
+		const { data: files } = await supabase.storage.from('frames').list();
+		if (files) {
+			// Cari file yang mirip / file lama, terus hapus (kecuali file yang baru aja diupload)
+			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
+			if (filesToDelete.length > 0) {
+				await supabase.storage.from('frames').remove(filesToDelete);
+			}
+		}
+
 		setIsUploadingFrame(false);
+		return data.publicUrl;
 	};
 
 	const isFormComplete = campaignTitle.trim() !== "" && campaignCaption.trim() !== "" && activeFrame !== EMPTY_FRAME && !isUploadingFrame;
@@ -99,14 +126,24 @@ function App() {
 		setIsGenerating(true);
 		setGeneratedLink("");
 
+		// 1. Upload Frame ke Supabase dulu
+		const uploadedUrl = await uploadFrameToSupabase();
+		
+		if (!uploadedUrl) {
+			setIsGenerating(false);
+			return;
+		}
+
+		// 2. Simpan URL gambar ke database
 		const { data, error } = await supabase.from('campaigns').insert([
-			{ title: campaignTitle, caption: campaignCaption, frame_url: activeFrame }
+			{ title: campaignTitle, caption: campaignCaption, frame_url: uploadedUrl }
 		]).select().single();
 
 		if (error) {
 			triggerPopup("Gagal", "Gagal menyimpan ke database.", "error");
 		} else {
 			setGeneratedLink(`${window.location.origin}/?id=${data.id}&pro=${isPremium}`);
+			setActiveFrame(uploadedUrl); // Update preview pakai URL asli
 		}
 		setIsGenerating(false);
 	};
@@ -235,7 +272,7 @@ function App() {
 								<div className="flex flex-col items-center justify-center">
 									<p className="text-xs text-pink-300 font-semibold">{isUploadingFrame ? "Mengunggah..." : (activeFrame === EMPTY_FRAME ? "Upload Frame PNG" : "Ganti Frame PNG")}</p>
 								</div>
-								<input type="file" accept="image/png" onChange={handleFrameUpload} className="hidden" disabled={isUploadingFrame} />
+								<input type="file" accept="image/png" onChange={handleFrameSelect} className="hidden" disabled={isUploadingFrame} />
 							</label>
 
 							<button 
@@ -244,7 +281,7 @@ function App() {
 								className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-2 ${isFormComplete ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
 							>
 								<LinkIcon size={14} />
-								{isGenerating ? "Memproses Link..." : "Generate Link"}
+								{isGenerating ? "Memproses Link & Upload..." : "Generate Link"}
 							</button>
 
 							{generatedLink && (
