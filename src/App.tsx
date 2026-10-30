@@ -6,6 +6,7 @@ import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
 import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
@@ -37,10 +38,10 @@ function App() {
 	const [isCopied, setIsCopied] = useState(false);
 	const [isUploadingFrame, setIsUploadingFrame] = useState(false);
 
-	// State Pop-up (Maintenance, Error, Info PNG, dll)
+	// State Pop-up
 	const [popup, setPopup] = useState<{show: boolean, title: string, message: string, type: "error" | "success" | "info"}>({show: false, title: "", message: "", type: "error"});
 	const [showMaintenance, setShowMaintenance] = useState(false);
-	const [showPngInfo, setShowPngInfo] = useState(false); // Pop-up Info PNG setelah aktif
+	const [showPngInfo, setShowPngInfo] = useState(false);
 
 	const triggerPopup = (title: string, message: string, type: "error" | "success" | "info" = "error") => {
 		setPopup({ show: true, title, message, type });
@@ -72,7 +73,7 @@ function App() {
 		if (keyInput === 'ZTWIBBON') {
 			setIsPremium(true);
 			setIsModeratorMode(true);
-			setShowPngInfo(true); // Munculin pop-up info PNG
+			setShowPngInfo(true);
 		} else { 
 			triggerPopup("Akses Ditolak", "Key Pro yang lu masukin salah.", "error");
 		}
@@ -107,7 +108,6 @@ function App() {
 
 		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
 
-		// Bersihin file lama (Anti numpuk)
 		const { data: files } = await supabase.storage.from('frames').list();
 		if (files) {
 			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
@@ -120,7 +120,6 @@ function App() {
 		return data.publicUrl;
 	};
 
-	// Validasi Form
 	const isFormComplete = isTitleSet && isCaptionSet && activeFrame !== EMPTY_FRAME && !isUploadingFrame;
 
 	const generateLinkProcess = async () => {
@@ -178,13 +177,11 @@ function App() {
 		);
 	};
 
-	// HALAMAN AWAL
 	if (appState === "home") {
 		return (
 			<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] relative overflow-hidden font-sans">
 				<CustomPopup />
 
-				{/* POP-UP MAINTENANCE */}
 				{showMaintenance && (
 					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/70 backdrop-blur-lg animate-in fade-in zoom-in duration-300">
 						<div className="bg-white p-10 rounded-[2rem] shadow-2xl text-center max-w-sm mx-4">
@@ -196,7 +193,6 @@ function App() {
 					</div>
 				)}
 
-				{/* POP-UP INFO PNG SETELAH AKTIF */}
 				{showPngInfo && (
 					<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/70 backdrop-blur-lg animate-in fade-in zoom-in duration-300">
 						<div className="bg-white p-10 rounded-[2rem] shadow-2xl text-center max-w-sm mx-4">
@@ -242,11 +238,11 @@ function App() {
 						<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_40px_rgba(236,72,153,0.8)] transition-all uppercase tracking-wider">Aktifkan</button>
 					</div>
 				</div>
+				<Analytics />
 			</main>
 		);
 	}
 
-	// HALAMAN EDITOR
 	return (
 		<main className="w-screen h-screen bg-[#0f1115] flex flex-col font-sans overflow-hidden">
 			<CustomPopup />
@@ -278,7 +274,6 @@ function App() {
 						<div className="p-5 border-b border-white/5 bg-white/[0.02]">
 							<h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-pink-500"></div> Pengaturan Event</h3>
 							
-							{/* FORM JUDUL DENGAN TOMBOL SET */}
 							<label className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-bold">Judul Event</label>
 							{isTitleSet ? (
 								<div className="flex justify-between items-center bg-black/30 border border-white/10 p-3 rounded-xl mb-4 text-sm text-white">
@@ -292,7 +287,6 @@ function App() {
 								</div>
 							)}
 							
-							{/* FORM CAPTION DENGAN TOMBOL SET */}
 							<label className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-bold">Caption Bawaan</label>
 							{isCaptionSet ? (
 								<div className="flex justify-between items-center bg-black/30 border border-white/10 p-3 rounded-xl mb-4 text-sm text-white">
@@ -306,7 +300,6 @@ function App() {
 								</div>
 							)}
 							
-							{/* FORM UPLOAD FRAME */}
 							<label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-pink-500/30 rounded-xl cursor-pointer bg-pink-500/5 hover:bg-pink-500/10 transition-colors mb-4 mt-2">
 								<div className="flex flex-col items-center justify-center">
 									<p className="text-xs text-pink-300 font-semibold">{isUploadingFrame ? "Mengunggah..." : (activeFrame === EMPTY_FRAME ? "Upload Frame PNG" : "Ganti Frame PNG")}</p>
@@ -351,6 +344,7 @@ function App() {
 					</div>
 				</div>
 			</div>
+			<Analytics />
 		</main>
 	);
 }
