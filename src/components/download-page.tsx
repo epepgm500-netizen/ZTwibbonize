@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowDownToLine, Copy, Check, Edit3 } from "lucide-react";
 
-// Tambahin prop initialCaption
 export default function DownloadPageSidebar({ canvas, isPremium, initialCaption }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean, initialCaption: string }) {
 	// Pake initialCaption dari App
 	const [caption, setCaption] = useState(initialCaption || "Halo nama saya [name] dari [school]");
