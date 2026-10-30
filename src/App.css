@@ -7,7 +7,6 @@ body {
 	font-style: normal;
 }
 
-/* --- ANIMASI POP-UP & TOAST --- */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-8px) rotate(-2deg); }
@@ -35,32 +34,11 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Class bantuan biar React bisa panggil animasinya */
-.animate-in {
-  animation-fill-mode: both;
-  animation-duration: 0.3s;
-}
-
-.fade-in {
-  animation-name: fade-in;
-}
-
-.zoom-in-95 {
-  animation-name: zoom-in-95;
-}
-
-.slide-in-from-top-5 {
-  animation-name: slide-in-from-top-5;
-}
-
-.slide-in-from-top {
-  animation-name: slide-in-from-top;
-  animation-duration: 0.7s;
-}
-
-.animate-\[shake_0\.5s_ease-in-out\] {
-  animation: shake 0.5s ease-in-out;
-}
+.animate-in { animation-fill-mode: both; animation-duration: 0.3s; }
+.fade-in { animation-name: fade-in; }
+.zoom-in-95 { animation-name: zoom-in-95; }
+.slide-in-from-top-5 { animation-name: slide-in-from-top-5; }
+.slide-in-from-top { animation-name: slide-in-from-top; animation-duration: 0.7s; }
 
 .shake-anim {
   animation: shake 0.5s ease-in-out;
