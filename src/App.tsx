@@ -207,20 +207,25 @@ function App() {
 	};
 
 	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0]; if (!file) return;
-		setFrameFile(file);
-		const reader = new FileReader();
-		reader.onload = (event) => { if (event.target?.result) setActiveFrame(event.target.result as string); };
-		reader.readAsDataURL(file);
+	const file = e.target.files?.[0]; if (!file) return;
+	setFrameFile(file);
+	
+	// 1. Preview langsung di kanvas (Biar ga blank)
+	const reader = new FileReader();
+	reader.onload = (event) => { 
+		if (event.target?.result) setActiveFrame(event.target.result as string); 
 	};
+	reader.readAsDataURL(file);
 
-	const uploadFrameToSupabase = async (): Promise<string | null> => {
-	if (!frameFile) return activeFrame;
+	// 2. Siapin upload di background
 	setIsUploadingFrame(true);
+};
+
+const uploadFrameToSupabase = async (): Promise<string | null> => {
+	if (!frameFile) return activeFrame;
 	const fileExt = frameFile.name.split('.').pop();
 	const fileName = `${Date.now()}.${fileExt}`;
 	
-	// Cuma upload, jangan hapus file lama biar ga blank
 	const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
 	
 	if (error) { 
