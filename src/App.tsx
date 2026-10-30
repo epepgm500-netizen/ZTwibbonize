@@ -90,7 +90,8 @@ function App() {
 				const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
 				if (data) {
 					setCampaignTitle(data.title); setCampaignCaption(data.caption); setActiveFrame(data.frame_url);
-					setAppState("editor"); setIsModeratorMode(false);
+					setAppState("editor"); 
+					setIsModeratorMode(false); // PASTIIN PESERTA GAK BISA JADI MODERATOR
 					if (params.get("pro") === "true") setIsPremium(true);
 				}
 			}
@@ -134,11 +135,12 @@ function App() {
 				
 				setActiveFrame(EMPTY_FRAME); 
 				setCampaignTitle(""); setCampaignCaption("");
-				setIsTitleSet(false); setIsCaptionSet(false);
+				setIsTitleSet(false); setIsCaptionSet(false); // Balikin state set ke false
+				setTempTitle(""); setTempCaption(""); 
 				setSidebarState("landing"); // BALIK KE HALAMAN UPLOAD FOTO
 				setUserPhoto(null); 
 				setFrameFile(null);
-				setGeneratedLink(""); // HAPUS LINK YANG UDAH DI-GENERATE
+				setGeneratedLink(""); // HAPUS LINK
 				
 				triggerPopup("Reset Berhasil", "Desain, judul, caption, dan link udah dihapus.", "success", true);
 			}
@@ -155,12 +157,12 @@ function App() {
 		} catch (error) {}
 	}, [activeFrame, campaignTitle, campaignCaption]);
 
-	// ADMIN LOGIC
 	const fetchAllKeys = async () => {
 		const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
 		if (data) setAllKeys(data);
 	};
 	useEffect(() => { if (isAdminLogged) fetchAllKeys(); }, [isAdminLogged]);
+	
 	const handleAdminLogin = () => {
 		if (adminPass === ADMIN_PASSWORD) setIsAdminLogged(true);
 		else triggerPopup("Gagal", "Password Admin salah!", "error");
@@ -190,7 +192,6 @@ function App() {
 		}
 	};
 
-	// LOGIKA VALIDASI WAKTU KETAT
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		setIsLoadingLogin(true);
@@ -290,7 +291,6 @@ function App() {
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
 		const color = popup.type === 'error' ? 'text-red-500' : (popup.type === 'success' ? 'text-green-500' : 'text-blue-500');
 
-		// KALO TIPE CONFIRM (BUAT RESET)
 		if (popup.type === 'confirm') {
 			return (
 				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -312,11 +312,10 @@ function App() {
 		return (
 			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4">
 				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
-					<div className={`mb-4 flex justify-center ${color} ${popup.type === 'error' ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}><Icon size={64} /></div>
+					<div className={`mb-4 flex justify-center ${color} ${popup.type === 'error' ? 'shake-anim' : 'animate-bounce'}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
 					
-					{/* MINI BAR ANIMASI LOADING */}
 					{popup.showBar && (
 						<div className="w-full bg-gray-200 h-1.5 rounded-full mb-6 overflow-hidden">
 							<div className="bg-green-500 h-full w-full origin-left animate-[shrink_2s_ease-out_forwards]"></div>
