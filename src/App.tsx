@@ -5,7 +5,7 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone, Loader2, RotateCcw } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone, Loader2, RotateCcw, RefreshCcw } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -40,7 +40,7 @@ function App() {
 	const [isCopied, setIsCopied] = useState(false);
 	const [isUploadingFrame, setIsUploadingFrame] = useState(false);
 
-	const [popup, setPopup] = useState<{show: boolean, title: string, message: string, type: "error" | "success" | "info", showBar?: boolean}>({show: false, title: "", message: "", type: "error"});
+	const [popup, setPopup] = useState<{show: boolean, title: string, message: string, type: "error" | "success" | "info" | "confirm", showBar?: boolean, onConfirm?: () => void}>({show: false, title: "", message: "", type: "error"});
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [showPngInfo, setShowPngInfo] = useState(false);
 
@@ -52,8 +52,8 @@ function App() {
 	const [newKeyDuration, setNewKeyDuration] = useState("24");
 	const [newKeyMaxDevices, setNewKeyMaxDevices] = useState("1");
 
-	const triggerPopup = (title: string, message: string, type: "error" | "success" | "info" = "error", showBar = false) => {
-		setPopup({ show: true, title, message, type, showBar });
+	const triggerPopup = (title: string, message: string, type: "error" | "success" | "info" | "confirm" = "error", showBar = false, onConfirm?: () => void) => {
+		setPopup({ show: true, title, message, type, showBar, onConfirm });
 	};
 
 	const getDeviceId = () => {
@@ -120,16 +120,29 @@ function App() {
 		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
 	};
 
-	// RESET CUMA BUAT DESAIN (DEVICE ID AMAN)
+	// RESET DESAIN LENGKAP DENGAN KONFIRMASI CUSTOM
 	const handleResetDesign = () => {
-		if(!confirm("Hapus desain saat ini dan mulai baru? (Kuota device tidak terpengaruh)")) return;
-		localStorage.removeItem("ztwibbon_saved_frame");
-		localStorage.removeItem("ztwibbon_saved_title");
-		localStorage.removeItem("ztwibbon_saved_caption");
-		setActiveFrame(EMPTY_FRAME); setCampaignTitle(""); setCampaignCaption("");
-		setIsTitleSet(false); setIsCaptionSet(false);
-		setSidebarState("landing"); setUserPhoto(null); setFrameFile(null);
-		triggerPopup("Reset Desain", "Desain, judul, dan caption udah dihapus.", "success", true);
+		triggerPopup(
+			"Reset Event?", 
+			"Semua Judul, Caption, dan Frame bakal dihapus permanen dari layar. Kuota device lu tetep aman.", 
+			"confirm",
+			false,
+			() => {
+				localStorage.removeItem("ztwibbon_saved_frame");
+				localStorage.removeItem("ztwibbon_saved_title");
+				localStorage.removeItem("ztwibbon_saved_caption");
+				
+				setActiveFrame(EMPTY_FRAME); 
+				setCampaignTitle(""); setCampaignCaption("");
+				setIsTitleSet(false); setIsCaptionSet(false);
+				setSidebarState("landing"); // BALIK KE HALAMAN UPLOAD FOTO
+				setUserPhoto(null); 
+				setFrameFile(null);
+				setGeneratedLink(""); // HAPUS LINK YANG UDAH DI-GENERATE
+				
+				triggerPopup("Reset Berhasil", "Desain, judul, caption, dan link udah dihapus.", "success", true);
+			}
+		);
 	};
 
 	useEffect(() => {
@@ -177,7 +190,7 @@ function App() {
 		}
 	};
 
-	// LOGIKA VALIDASI WAKTU KETAT (GAK NAMBAH JAM LAGI)
+	// LOGIKA VALIDASI WAKTU KETAT
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		setIsLoadingLogin(true);
@@ -200,9 +213,7 @@ function App() {
 		let currentDevices = data.used_devices || [];
 		let activationTime = data.activation_time || 0;
 
-		// 1. Cek apakah device ini udah pernah pake
 		if (currentDevices.includes(deviceId)) {
-			// Device udah terdaftar, cek waktunya udah abis atau belum
 			const timePassedMs = Date.now() - activationTime;
 			const durationMs = data.duration_hours * 3600000;
 			
@@ -211,15 +222,12 @@ function App() {
 				triggerPopup("Key Expired", "Waktu key ini udah habis. Silakan beli key baru.", "error");
 				return;
 			}
-			// Kalo belum abis, biarin masuk pake sisa waktu
 		} else {
-			// 2. Kalo device baru, cek batas kuota
 			if (currentDevices.length >= data.max_devices) {
 				setIsLoadingLogin(false);
 				triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
 				return;
 			}
-			// Daftarin device baru & catat waktu aktif pertama kali
 			currentDevices.push(deviceId);
 			activationTime = Date.now();
 			await supabase.from('license_keys').update({ used_devices: currentDevices, activation_time: activationTime }).eq('id', data.id);
@@ -227,7 +235,6 @@ function App() {
 
 		setTimeout(() => {
 			const durationMs = data.duration_hours * 3600000;
-			// Hitung sisa waktu dari waktu aktivasi pertama
 			const expiryTimestamp = activationTime + durationMs;
 			
 			localStorage.setItem("ztwibbon_expiry", expiryTimestamp.toString());
@@ -278,27 +285,50 @@ function App() {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
-
 	const CustomPopup = () => {
 		if (!popup.show) return null;
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
 		const color = popup.type === 'error' ? 'text-red-500' : (popup.type === 'success' ? 'text-green-500' : 'text-blue-500');
+
+		// KALO TIPE CONFIRM (BUAT RESET)
+		if (popup.type === 'confirm') {
+			return (
+				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in-95 duration-300">
+						<div className="mb-4 flex justify-center text-orange-500 animate-bounce">
+							<RefreshCcw size={64} />
+						</div>
+						<h2 className="text-2xl font-black mb-2 text-gray-800">{popup.title}</h2>
+						<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
+						<div className="flex gap-2">
+							<button onClick={() => setPopup({ ...popup, show: false })} className="flex-1 bg-gray-200 text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors">Batal</button>
+							<button onClick={() => { setPopup({ ...popup, show: false }); popup.onConfirm?.(); }} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30">Ya, Reset</button>
+						</div>
+					</div>
+				</div>
+			);
+		}
+
 		return (
 			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4">
 				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
-					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
+					<div className={`mb-4 flex justify-center ${color} ${popup.type === 'error' ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
+					
+					{/* MINI BAR ANIMASI LOADING */}
 					{popup.showBar && (
 						<div className="w-full bg-gray-200 h-1.5 rounded-full mb-6 overflow-hidden">
 							<div className="bg-green-500 h-full w-full origin-left animate-[shrink_2s_ease-out_forwards]"></div>
 						</div>
 					)}
-					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Mengerti</button>
+					
+					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors">Mengerti</button>
 				</div>
 			</div>
 		);
 	};
+
 	if (isAdminMode) {
 		if (!isAdminLogged) {
 			return (
@@ -389,6 +419,7 @@ function App() {
 						</div>
 					</div>
 				)}
+				
 				<div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
 				<div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
 				
