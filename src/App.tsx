@@ -44,7 +44,6 @@ function App() {
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [showPngInfo, setShowPngInfo] = useState(false);
 
-	// State Admin
 	const [isAdminMode, setIsAdminMode] = useState(false);
 	const [adminPass, setAdminPass] = useState("");
 	const [isAdminLogged, setIsAdminLogged] = useState(false);
@@ -72,12 +71,8 @@ function App() {
 
 		const savedExpiry = localStorage.getItem("ztwibbon_expiry");
 		if (savedExpiry) {
-			if (Date.now() < parseInt(savedExpiry)) {
-				setIsPremium(true); setIsModeratorMode(true);
-			} else {
-				localStorage.removeItem("ztwibbon_expiry");
-				setIsPremium(false); setIsModeratorMode(false);
-			}
+			if (Date.now() < parseInt(savedExpiry)) { setIsPremium(true); setIsModeratorMode(true); }
+			else { localStorage.removeItem("ztwibbon_expiry"); setIsPremium(false); setIsModeratorMode(false); }
 		}
 
 		try {
@@ -125,34 +120,16 @@ function App() {
 		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
 	};
 
-	// RESET DESIGN LENGKAP + CABUT DEVICE ID
-	const handleResetDesign = async () => {
-		if(!confirm("Hapus semua data Event, Judul, Caption, dan Frame?")) return;
-		
-		// 1. Hapus local storage desain
+	// RESET CUMA BUAT DESAIN (DEVICE ID AMAN)
+	const handleResetDesign = () => {
+		if(!confirm("Hapus desain saat ini dan mulai baru? (Kuota device tidak terpengaruh)")) return;
 		localStorage.removeItem("ztwibbon_saved_frame");
 		localStorage.removeItem("ztwibbon_saved_title");
 		localStorage.removeItem("ztwibbon_saved_caption");
-		
 		setActiveFrame(EMPTY_FRAME); setCampaignTitle(""); setCampaignCaption("");
 		setIsTitleSet(false); setIsCaptionSet(false);
 		setSidebarState("landing"); setUserPhoto(null); setFrameFile(null);
-
-		// 2. Coba hapus Device ID dari database (biar kuota device balik)
-		const deviceId = getDeviceId();
-		const { data: allKeysData } = await supabase.from('license_keys').select('id, key_code, used_devices');
-		
-		if (allKeysData) {
-			// Cari key mana yang punya device ini, lalu hapus dari list
-			const keyToUpdate = allKeysData.find((k:any) => k.used_devices && k.used_devices.includes(deviceId));
-			if (keyToUpdate) {
-				const newDevices = keyToUpdate.used_devices.filter((d:string) => d !== deviceId);
-				await supabase.from('license_keys').update({ used_devices: newDevices }).eq('id', keyToUpdate.id);
-			}
-		}
-		
-		// Tampilkan popup dengan animasi Loading Bar
-		triggerPopup("Reset Berhasil", "Semua desain, judul, dan caption udah dihapus. Kuota Device lu juga udah dilepas.", "success", true);
+		triggerPopup("Reset Desain", "Desain, judul, dan caption udah dihapus.", "success", true);
 	};
 
 	useEffect(() => {
@@ -165,24 +142,21 @@ function App() {
 		} catch (error) {}
 	}, [activeFrame, campaignTitle, campaignCaption]);
 
+	// ADMIN LOGIC
 	const fetchAllKeys = async () => {
 		const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
 		if (data) setAllKeys(data);
 	};
-
 	useEffect(() => { if (isAdminLogged) fetchAllKeys(); }, [isAdminLogged]);
-
 	const handleAdminLogin = () => {
 		if (adminPass === ADMIN_PASSWORD) setIsAdminLogged(true);
 		else triggerPopup("Gagal", "Password Admin salah!", "error");
 	};
-
 	const handleGenerateKey = async () => {
 		if (!newKeyName || !newKeyDuration) return;
 		const dur = parseFloat(newKeyDuration);
 		const maxDev = parseInt(newKeyMaxDevices);
 		const { error } = await supabase.from('license_keys').insert([{ key_code: newKeyName, duration_hours: dur, max_devices: maxDev, used_devices: [] }]);
-		
 		if (error) {
 			if (error.code === '23505') triggerPopup("Key Duplikat", "Nama key ini udah ada.", "error");
 			else triggerPopup("Error", "Gagal simpan key.", "error");
@@ -192,12 +166,10 @@ function App() {
 			fetchAllKeys();
 		}
 	};
-
 	const handleToggleKey = async (id: string, currentStatus: boolean) => {
 		await supabase.from('license_keys').update({ is_active: !currentStatus }).eq('id', id);
 		fetchAllKeys();
 	};
-
 	const handleDeleteKey = async (id: string) => {
 		if(confirm("Hapus key ini permanen?")) {
 			await supabase.from('license_keys').delete().eq('id', id);
@@ -205,7 +177,7 @@ function App() {
 		}
 	};
 
-	// LOGIKA FIX: Pop-up PNG muncul setelah masuk editor
+	// LOGIKA VALIDASI WAKTU KETAT (GAK NAMBAH JAM LAGI)
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		setIsLoadingLogin(true);
@@ -215,32 +187,54 @@ function App() {
 		if (error || !data) {
 			setIsLoadingLogin(false);
 			triggerPopup("Akses Ditolak", "Key Pro tidak ditemukan.", "error");
-		} else if (!data.is_active) {
+			return;
+		} 
+		
+		if (!data.is_active) {
 			setIsLoadingLogin(false);
 			triggerPopup("Key Mati", "Key ini udah dinonaktifin sama Admin.", "error");
-		} else {
-			const deviceId = getDeviceId();
-			let currentDevices = data.used_devices || [];
-
-			if (!currentDevices.includes(deviceId)) {
-				if (currentDevices.length >= data.max_devices) {
-					setIsLoadingLogin(false);
-					triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
-					return;
-				}
-				currentDevices.push(deviceId);
-				await supabase.from('license_keys').update({ used_devices: currentDevices }).eq('id', data.id);
-			}
-
-			setTimeout(() => {
-				const durationMs = data.duration_hours * 3600000;
-				localStorage.setItem("ztwibbon_expiry", (Date.now() + durationMs).toString());
-				setIsPremium(true); setIsModeratorMode(true); 
-				setAppState("editor");
-				setShowPngInfo(true); // MUNCULIN POP UP PNG
-				setIsLoadingLogin(false);
-			}, 1000);
+			return;
 		}
+
+		const deviceId = getDeviceId();
+		let currentDevices = data.used_devices || [];
+		let activationTime = data.activation_time || 0;
+
+		// 1. Cek apakah device ini udah pernah pake
+		if (currentDevices.includes(deviceId)) {
+			// Device udah terdaftar, cek waktunya udah abis atau belum
+			const timePassedMs = Date.now() - activationTime;
+			const durationMs = data.duration_hours * 3600000;
+			
+			if (timePassedMs >= durationMs) {
+				setIsLoadingLogin(false);
+				triggerPopup("Key Expired", "Waktu key ini udah habis. Silakan beli key baru.", "error");
+				return;
+			}
+			// Kalo belum abis, biarin masuk pake sisa waktu
+		} else {
+			// 2. Kalo device baru, cek batas kuota
+			if (currentDevices.length >= data.max_devices) {
+				setIsLoadingLogin(false);
+				triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
+				return;
+			}
+			// Daftarin device baru & catat waktu aktif pertama kali
+			currentDevices.push(deviceId);
+			activationTime = Date.now();
+			await supabase.from('license_keys').update({ used_devices: currentDevices, activation_time: activationTime }).eq('id', data.id);
+		}
+
+		setTimeout(() => {
+			const durationMs = data.duration_hours * 3600000;
+			// Hitung sisa waktu dari waktu aktivasi pertama
+			const expiryTimestamp = activationTime + durationMs;
+			
+			localStorage.setItem("ztwibbon_expiry", expiryTimestamp.toString());
+			setIsPremium(true); setIsModeratorMode(true); 
+			setAppState("editor"); setShowPngInfo(true);
+			setIsLoadingLogin(false);
+		}, 1000);
 	};
 
 	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,18 +250,14 @@ function App() {
 		setIsUploadingFrame(true);
 		const fileExt = frameFile.name.split('.').pop();
 		const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-		
 		const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
 		if (error) { setIsUploadingFrame(false); return null; }
-		
-		const { data } = await supabase.storage.from('frames').getPublicUrl(fileName);
-		
+		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
 		const { data: files } = await supabase.storage.from('frames').list();
 		if (files) {
 			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
 			if (filesToDelete.length > 0) await supabase.storage.from('frames').remove(filesToDelete);
 		}
-		
 		setIsUploadingFrame(false);
 		return data.publicUrl;
 	};
@@ -299,14 +289,11 @@ function App() {
 					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
-					
-					{/* MINI BAR ANIMASI LOADING */}
 					{popup.showBar && (
 						<div className="w-full bg-gray-200 h-1.5 rounded-full mb-6 overflow-hidden">
 							<div className="bg-green-500 h-full w-full origin-left animate-[shrink_2s_ease-out_forwards]"></div>
 						</div>
 					)}
-					
 					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl">Mengerti</button>
 				</div>
 			</div>
@@ -402,7 +389,6 @@ function App() {
 						</div>
 					</div>
 				)}
-				
 				<div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pink-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
 				<div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
 				
@@ -450,7 +436,6 @@ function App() {
 		<main className="w-screen h-screen bg-[#0f1115] flex flex-col font-sans overflow-hidden">
 			<CustomPopup />
 
-			{/* POP-UP INFO PNG SETELAH AKTIF (Ditaruh di Editor biar ga mental) */}
 			{showPngInfo && (
 				<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4">
 					<div className="bg-white p-10 rounded-[2rem] text-center max-w-sm mx-4">
@@ -490,7 +475,6 @@ function App() {
 						<div className="p-5 border-b border-white/5 bg-white/[0.02]">
 							<div className="flex justify-between items-center mb-4">
 								<h3 className="text-sm font-bold text-white">Pengaturan Event</h3>
-								{/* TOMBOL RESET EVENT */}
 								<button onClick={handleResetDesign} className="text-[10px] font-bold text-gray-400 hover:text-red-400 flex items-center gap-1 transition-colors">
 									<RotateCcw size={12}/> Reset Event
 								</button>
