@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ArrowDownToLine, Copy, Check, Edit3 } from "lucide-react";
 
-export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean }) {
-	const [caption, setCaption] = useState("Halo nama saya [name] dari [school]");
+// Tambahin prop initialCaption
+export default function DownloadPageSidebar({ canvas, isPremium, initialCaption }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean, initialCaption: string }) {
+	// Pake initialCaption dari App
+	const [caption, setCaption] = useState(initialCaption || "Halo nama saya [name] dari [school]");
 	const [isEditing, setIsEditing] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
 
@@ -10,7 +12,6 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 		const currentCanvas = canvas.current;
 		if (!currentCanvas) return;
 		
-		// Gambar watermark kalau bukan Premium
 		if (!isPremium) {
 			const ctx = currentCanvas.getContext("2d");
 			if (ctx) {
@@ -25,7 +26,6 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 			}
 		}
 
-		// Proses Download via Blob
 		currentCanvas.toBlob((blob) => {
 			if (!blob) return;
 			const url = URL.createObjectURL(blob);
@@ -35,7 +35,6 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 			document.body.appendChild(link);
 			link.click();
 			
-			// Kasih jeda bentar sebelum bersihin link
 			setTimeout(() => {
 				document.body.removeChild(link);
 				URL.revokeObjectURL(url);
@@ -51,7 +50,7 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 
 	return (
 		<section className="flex flex-col gap-4 mt-6">
-			<div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+			<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
 				<div className="flex justify-between items-center mb-2">
 					<label className="text-xs font-bold text-gray-600">Caption Twibbon</label>
 					<button onClick={() => setIsEditing(!isEditing)} className="text-[10px] font-bold text-pink-600 hover:text-pink-700 flex items-center gap-1">
@@ -63,10 +62,10 @@ export default function DownloadPageSidebar({ canvas, isPremium }: { canvas: Rea
 					<textarea 
 						value={caption} 
 						onChange={(e) => setCaption(e.target.value)} 
-						className="w-full border p-2 rounded text-sm h-20 resize-none focus:outline-none focus:border-pink-500"
+						className="w-full border p-2 rounded text-sm h-20 resize-none focus:outline-none focus:border-pink-500 text-black"
 					/>
 				) : (
-					<p className="text-sm text-gray-700 bg-white p-3 rounded-lg border border-gray-200 italic">
+					<p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 italic">
 						"{caption}"
 					</p>
 				)}

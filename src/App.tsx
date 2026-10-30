@@ -308,7 +308,7 @@ function App() {
 					<div className="p-5 flex-1">
 						{sidebarState == "landing" && <LandingPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} />}
 						{sidebarState == "adjust" && <AdjustPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} transform={photoTransform} setTransform={setPhotoTransform} onGenerate={setSidebarState} />}
-						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} />}
+						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} />}
 					</div>
 				</div>
 			</div>
