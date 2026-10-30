@@ -9,7 +9,7 @@ import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, 
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const ADMIN_PASSWORD = "ADMINZTWIBBON";
+const ADMIN_PASSWORD = "ZIEADMIN";
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -247,7 +247,6 @@ function App() {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
-	
 
 	const CustomPopup = () => {
 		if (!popup.show) return null;
