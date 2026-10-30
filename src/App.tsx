@@ -5,7 +5,7 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone, ArrowRight } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -43,7 +43,6 @@ function App() {
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [showPngInfo, setShowPngInfo] = useState(false);
 
-	// State Admin
 	const [isAdminMode, setIsAdminMode] = useState(false);
 	const [adminPass, setAdminPass] = useState("");
 	const [isAdminLogged, setIsAdminLogged] = useState(false);
@@ -56,7 +55,6 @@ function App() {
 		setPopup({ show: true, title, message, type });
 	};
 
-	// Helper Device ID
 	const getDeviceId = () => {
 		let id = localStorage.getItem("ztwibbon_deviceid");
 		if (!id) {
@@ -74,10 +72,11 @@ function App() {
 		if (savedExpiry && Date.now() < parseInt(savedExpiry)) {
 			setIsPremium(true);
 			setIsModeratorMode(true);
+			setAppState("editor");
 		}
 
 		const savedDesign = localStorage.getItem("ztwibbon_saved_frame");
-		if (savedDesign) setActiveFrame(savedDesign);
+		if (savedDesign && savedDesign !== EMPTY_FRAME) setActiveFrame(savedDesign);
 		const savedTitle = localStorage.getItem("ztwibbon_saved_title");
 		if (savedTitle) { setCampaignTitle(savedTitle); setIsTitleSet(true); }
 		const savedCaption = localStorage.getItem("ztwibbon_saved_caption");
@@ -116,8 +115,8 @@ function App() {
 	const handleLogout = () => {
 		localStorage.removeItem("ztwibbon_expiry");
 		setIsPremium(false); setIsModeratorMode(false); setTimeLeft(null);
+		setAppState("home");
 		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
-		window.location.reload(); 
 	};
 
 	const handleResetDesign = () => {
@@ -138,7 +137,6 @@ function App() {
 		if (campaignCaption) localStorage.setItem("ztwibbon_saved_caption", campaignCaption);
 	}, [activeFrame, campaignTitle, campaignCaption]);
 
-	// ADMIN LOGIC
 	const fetchAllKeys = async () => {
 		const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
 		if (data) setAllKeys(data);
@@ -182,7 +180,6 @@ function App() {
 		}
 	};
 
-	// LOGIKA USER MASUKIN KEY (CEK DEVICE)
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		const { data, error } = await supabase.from('license_keys').select('*').eq('key_code', keyInput).single();
@@ -210,7 +207,6 @@ function App() {
 		}
 	};
 
-	// EDITOR LOGIC
 	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]; if (!file) return;
 		setFrameFile(file);
@@ -269,7 +265,6 @@ function App() {
 		);
 	};
 
-	// --- ADMIN PANEL ---
 	if (isAdminMode) {
 		if (!isAdminLogged) {
 			return (
@@ -346,7 +341,6 @@ function App() {
 		);
 	}
 
-	// --- HOME ---
 	if (appState === "home") {
 		return (
 			<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f172a] relative overflow-hidden font-sans">
@@ -394,6 +388,7 @@ function App() {
 						{isPremium && timeLeft ? (
 							<div className="mb-4 space-y-3">
 								<div className="bg-green-500/10 border border-green-500/30 p-2 rounded-xl flex items-center justify-center gap-2 text-green-400 font-bold text-sm"><Clock size={14}/> Aktif: {timeLeft}</div>
+								<button onClick={() => setAppState("editor")} className="w-full flex items-center justify-center gap-2 bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-500 transition-all"><ArrowRight size={16}/> Masuk ke Editor</button>
 								<button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold hover:bg-red-500/30 transition-colors"><LogOut size={14}/> Logout</button>
 							</div>
 						) : (
@@ -412,7 +407,6 @@ function App() {
 		);
 	}
 
-	// --- EDITOR ---
 	return (
 		<main className="w-screen h-screen bg-[#0f1115] flex flex-col font-sans overflow-hidden">
 			<CustomPopup />
