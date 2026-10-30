@@ -5,11 +5,11 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone, Loader2 } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const ADMIN_PASSWORD = "ADMINZTWIBBON"; // GANTI PASSWORD DI SINI
+const ADMIN_PASSWORD = "ADMINZTWIBBON";
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -17,6 +17,7 @@ function App() {
 	const [keyInput, setKeyInput] = useState("");
 	const [showKey, setShowKey] = useState(false);
 	const [timeLeft, setTimeLeft] = useState<string | null>(null);
+	const [isLoadingLogin, setIsLoadingLogin] = useState(false); // State Loading Login
 
 	const [sidebarState, setSidebarState] = useState<"landing" | "adjust" | "ready">("landing");
 	const [userPhoto, setUserPhoto] = useState<HTMLImageElement | null>(null);
@@ -68,10 +69,17 @@ function App() {
 		const params = new URLSearchParams(window.location.search);
 		if (params.get("admin") === "true") setIsAdminMode(true);
 
+		// AUTO CLEAR JIKA KEY SUDAH EXPIRED
 		const savedExpiry = localStorage.getItem("ztwibbon_expiry");
-		if (savedExpiry && Date.now() < parseInt(savedExpiry)) {
-			setIsPremium(true);
-			setIsModeratorMode(true);
+		if (savedExpiry) {
+			if (Date.now() < parseInt(savedExpiry)) {
+				setIsPremium(true);
+				setIsModeratorMode(true);
+			} else {
+				localStorage.removeItem("ztwibbon_expiry");
+				setIsPremium(false);
+				setIsModeratorMode(false);
+			}
 		}
 
 		try {
@@ -81,7 +89,7 @@ function App() {
 			if (savedTitle) { setCampaignTitle(savedTitle); setIsTitleSet(true); }
 			const savedCaption = localStorage.getItem("ztwibbon_saved_caption");
 			if (savedCaption) { setCampaignCaption(savedCaption); setIsCaptionSet(true); }
-		} catch (e) { console.warn("Gagal load data dari storage"); }
+		} catch (e) { console.warn("Gagal load data"); }
 
 		const campaignId = params.get("id");
 		if (campaignId && !isAdminMode) {
@@ -104,7 +112,13 @@ function App() {
 
 		const interval = setInterval(() => {
 			const diff = parseInt(savedExpiry) - Date.now();
-			if (diff <= 0) { clearInterval(interval); handleLogout(); return; }
+			if (diff <= 0) { 
+				clearInterval(interval); 
+				localStorage.removeItem("ztwibbon_expiry");
+				// Auto hapus device ID dari key di database bisa ditambahin di sini kalo mau lebih advance
+				handleLogout(); 
+				return; 
+			}
 			const hours = Math.floor(diff / 3600000);
 			const minutes = Math.floor((diff % 3600000) / 60000);
 			const seconds = Math.floor((diff % 60000) / 1000);
@@ -140,11 +154,10 @@ function App() {
 			}
 			if (campaignTitle) localStorage.setItem("ztwibbon_saved_title", campaignTitle);
 			if (campaignCaption) localStorage.setItem("ztwibbon_saved_caption", campaignCaption);
-		} catch (error) {
-			console.warn("Memori HP/Browser penuh, gagal autosave frame.");
-		}
+		} catch (error) {}
 	}, [activeFrame, campaignTitle, campaignCaption]);
 
+	// ADMIN LOGIC
 	const fetchAllKeys = async () => {
 		const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
 		if (data) setAllKeys(data);
@@ -188,13 +201,18 @@ function App() {
 		}
 	};
 
+	// LOGIKA USER MASUKIN KEY (LOADING -> MASUK EDITOR)
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
+		setIsLoadingLogin(true); // Mulai loading
+
 		const { data, error } = await supabase.from('license_keys').select('*').eq('key_code', keyInput).single();
 		
 		if (error || !data) {
+			setIsLoadingLogin(false);
 			triggerPopup("Akses Ditolak", "Key Pro tidak ditemukan.", "error");
 		} else if (!data.is_active) {
+			setIsLoadingLogin(false);
 			triggerPopup("Key Mati", "Key ini udah dinonaktifin sama Admin.", "error");
 		} else {
 			const deviceId = getDeviceId();
@@ -202,6 +220,7 @@ function App() {
 
 			if (!currentDevices.includes(deviceId)) {
 				if (currentDevices.length >= data.max_devices) {
+					setIsLoadingLogin(false);
 					triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
 					return;
 				}
@@ -209,9 +228,15 @@ function App() {
 				await supabase.from('license_keys').update({ used_devices: currentDevices }).eq('id', data.id);
 			}
 
-			const durationMs = data.duration_hours * 3600000;
-			localStorage.setItem("ztwibbon_expiry", (Date.now() + durationMs).toString());
-			setIsPremium(true); setIsModeratorMode(true); setShowPngInfo(true);
+			// Delay dikit biar animasi loadingnya keren
+			setTimeout(() => {
+				const durationMs = data.duration_hours * 3600000;
+				localStorage.setItem("ztwibbon_expiry", (Date.now() + durationMs).toString());
+				setIsPremium(true); setIsModeratorMode(true); 
+				setShowPngInfo(true);
+				setAppState("editor"); // LANGSUNG MASUK EDITOR
+				setIsLoadingLogin(false);
+			}, 1000);
 		}
 	};
 
@@ -260,6 +285,7 @@ function App() {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
+
 	const CustomPopup = () => {
 		if (!popup.show) return null;
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
@@ -275,7 +301,6 @@ function App() {
 			</div>
 		);
 	};
-
 	if (isAdminMode) {
 		if (!isAdminLogged) {
 			return (
@@ -372,7 +397,7 @@ function App() {
 							<CheckCircle2 size={64} className="mx-auto text-pink-500 mb-4 animate-bounce" />
 							<h2 className="text-2xl font-black text-gray-800 mb-3">Berhasil!</h2>
 							<p className="text-gray-500 mb-6">Pastikan Frame Twibbon yang kamu upload berformat <strong>.PNG (No Background)</strong> ya!</p>
-							<button onClick={() => { setShowPngInfo(false); setAppState("editor"); window.location.reload(); }} className="w-full bg-pink-600 text-white font-bold py-4 rounded-xl">Mengerti</button>
+							<button onClick={() => { setShowPngInfo(false); setAppState("editor"); }} className="w-full bg-pink-600 text-white font-bold py-4 rounded-xl">Mengerti</button>
 						</div>
 					</div>
 				)}
@@ -404,10 +429,12 @@ function App() {
 						) : (
 							<>
 								<div className="relative w-full mb-4">
-									<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none placeholder-gray-500" placeholder="Masukin Key PRO" />
+									<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none placeholder-gray-500" placeholder="Masukin Key PRO" disabled={isLoadingLogin} />
 									<button onClick={() => setShowKey(!showKey)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
 								</div>
-								<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">Aktifkan</button>
+								<button onClick={handleClaimPremium} disabled={isLoadingLogin} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">
+									{isLoadingLogin ? <><Loader2 className="animate-spin" size={20} /> Memproses...</> : "Aktifkan"}
+								</button>
 							</>
 						)}
 					</div>
@@ -429,7 +456,8 @@ function App() {
 					{isPremium && timeLeft && isModeratorMode && <span className="text-xs font-bold text-green-400 flex items-center gap-1"><Clock size={12}/> {timeLeft}</span>}
 					{isPremium ? <span className="bg-pink-500/20 text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-500/30 flex items-center gap-1"><Crown size={12}/> PRO</span> : <span className="bg-gray-500/20 text-gray-400 px-3 py-1 rounded-full text-xs font-bold border border-gray-500/30">PESERTA</span>}
 					
-					{isPremium && (
+					{/* TOMBOL LOGOUT CUMA MUNCUL KALO MODERATOR (BUKAN PESERTA LINK) */}
+					{isPremium && isModeratorMode && (
 						<button onClick={handleLogout} className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1">
 							<LogOut size={12}/> Logout
 						</button>
