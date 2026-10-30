@@ -79,7 +79,6 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption,
 				Download Gambar HD
 			</button>
 
-			{/* TOMBOL BUAT DESAIN BARU (Hapus save-an di HP) */}
 			<button onClick={onReset} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gray-200 text-gray-700 p-3 rounded-xl hover:bg-gray-300 transition-all text-xs mt-2">
 				<RotateCcw size={16} />
 				Buat Desain Baru

@@ -5,7 +5,7 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone, ArrowRight } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -72,7 +72,6 @@ function App() {
 		if (savedExpiry && Date.now() < parseInt(savedExpiry)) {
 			setIsPremium(true);
 			setIsModeratorMode(true);
-			setAppState("editor");
 		}
 
 		const savedDesign = localStorage.getItem("ztwibbon_saved_frame");
@@ -248,6 +247,7 @@ function App() {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
+	
 
 	const CustomPopup = () => {
 		if (!popup.show) return null;
@@ -388,8 +388,7 @@ function App() {
 						{isPremium && timeLeft ? (
 							<div className="mb-4 space-y-3">
 								<div className="bg-green-500/10 border border-green-500/30 p-2 rounded-xl flex items-center justify-center gap-2 text-green-400 font-bold text-sm"><Clock size={14}/> Aktif: {timeLeft}</div>
-								<button onClick={() => setAppState("editor")} className="w-full flex items-center justify-center gap-2 bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-500 transition-all"><ArrowRight size={16}/> Masuk ke Editor</button>
-								<button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold hover:bg-red-500/30 transition-colors"><LogOut size={14}/> Logout</button>
+								<button onClick={() => setAppState("editor")} className="w-full flex items-center justify-center gap-2 bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-500 transition-all">Masuk ke Editor</button>
 							</div>
 						) : (
 							<>
@@ -418,6 +417,12 @@ function App() {
 				<div className="flex items-center gap-3">
 					{isPremium && timeLeft && isModeratorMode && <span className="text-xs font-bold text-green-400 flex items-center gap-1"><Clock size={12}/> {timeLeft}</span>}
 					{isPremium ? <span className="bg-pink-500/20 text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-500/30 flex items-center gap-1"><Crown size={12}/> PRO</span> : <span className="bg-gray-500/20 text-gray-400 px-3 py-1 rounded-full text-xs font-bold border border-gray-500/30">PESERTA</span>}
+					
+					{isPremium && (
+						<button onClick={handleLogout} className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1">
+							<LogOut size={12}/> Logout
+						</button>
+					)}
 				</div>
 			</nav>
 			<div className="flex-1 flex flex-col md:flex-row overflow-hidden">
