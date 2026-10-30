@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { ArrowDownToLine, Copy, Check, Edit3 } from "lucide-react";
+import { ArrowDownToLine, Copy, Check, Edit3, RotateCcw } from "lucide-react";
 
-export default function DownloadPageSidebar({ canvas, isPremium, initialCaption }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean, initialCaption: string }) {
-	// Pake initialCaption dari App
+export default function DownloadPageSidebar({ canvas, isPremium, initialCaption, onReset }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean, initialCaption: string, onReset: () => void }) {
 	const [caption, setCaption] = useState(initialCaption || "Halo nama saya [name] dari [school]");
 	const [isEditing, setIsEditing] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
@@ -78,6 +77,12 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption 
 			<button onClick={handleDownloadCanvas} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 p-4 text-white rounded-xl shadow-[0_10px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_30px_rgba(236,72,153,0.5)] hover:-translate-y-1 transition-all text-sm uppercase tracking-wide">
 				<ArrowDownToLine size={20} />
 				Download Gambar HD
+			</button>
+
+			{/* TOMBOL BUAT DESAIN BARU (Hapus save-an di HP) */}
+			<button onClick={onReset} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gray-200 text-gray-700 p-3 rounded-xl hover:bg-gray-300 transition-all text-xs mt-2">
+				<RotateCcw size={16} />
+				Buat Desain Baru
 			</button>
 		</section>
 	);

@@ -5,12 +5,11 @@ import LandingPageSidebar from "./components/landing-page";
 import AdjustPageSidebar from "./components/adjust-page";
 import DownloadPageSidebar from "./components/download-page";
 import { supabase } from "./supabase";
-import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power } from "lucide-react";
+import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, CheckCircle, Clock, ShieldAlert, Key, Plus, Trash2, Power, LogOut, MonitorSmartphone } from "lucide-react";
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
-const ADMIN_PASSWORD = "ZIEADMIN"; // GANTI PASSWORD ADMIN DI SINI
+const ADMIN_PASSWORD = "ADMINZTWIBBON";
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -44,15 +43,27 @@ function App() {
 	const [showMaintenance, setShowMaintenance] = useState(false);
 	const [showPngInfo, setShowPngInfo] = useState(false);
 
+	// State Admin
 	const [isAdminMode, setIsAdminMode] = useState(false);
 	const [adminPass, setAdminPass] = useState("");
 	const [isAdminLogged, setIsAdminLogged] = useState(false);
 	const [allKeys, setAllKeys] = useState<any[]>([]);
 	const [newKeyName, setNewKeyName] = useState("");
 	const [newKeyDuration, setNewKeyDuration] = useState("24");
+	const [newKeyMaxDevices, setNewKeyMaxDevices] = useState("1");
 
 	const triggerPopup = (title: string, message: string, type: "error" | "success" | "info" = "error") => {
 		setPopup({ show: true, title, message, type });
+	};
+
+	// Helper Device ID
+	const getDeviceId = () => {
+		let id = localStorage.getItem("ztwibbon_deviceid");
+		if (!id) {
+			id = Math.random().toString(36).substring(2, 15);
+			localStorage.setItem("ztwibbon_deviceid", id);
+		}
+		return id;
 	};
 
 	useEffect(() => {
@@ -65,16 +76,20 @@ function App() {
 			setIsModeratorMode(true);
 		}
 
+		const savedDesign = localStorage.getItem("ztwibbon_saved_frame");
+		if (savedDesign) setActiveFrame(savedDesign);
+		const savedTitle = localStorage.getItem("ztwibbon_saved_title");
+		if (savedTitle) { setCampaignTitle(savedTitle); setIsTitleSet(true); }
+		const savedCaption = localStorage.getItem("ztwibbon_saved_caption");
+		if (savedCaption) { setCampaignCaption(savedCaption); setIsCaptionSet(true); }
+
 		const campaignId = params.get("id");
 		if (campaignId && !isAdminMode) {
 			async function fetchCampaign() {
 				const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
 				if (data) {
-					setCampaignTitle(data.title);
-					setCampaignCaption(data.caption);
-					setActiveFrame(data.frame_url);
-					setAppState("editor");
-					setIsModeratorMode(false);
+					setCampaignTitle(data.title); setCampaignCaption(data.caption); setActiveFrame(data.frame_url);
+					setAppState("editor"); setIsModeratorMode(false);
 					if (params.get("pro") === "true") setIsPremium(true);
 				}
 			}
@@ -89,13 +104,7 @@ function App() {
 
 		const interval = setInterval(() => {
 			const diff = parseInt(savedExpiry) - Date.now();
-			if (diff <= 0) {
-				clearInterval(interval);
-				localStorage.removeItem("ztwibbon_expiry");
-				setIsPremium(false); setIsModeratorMode(false); setTimeLeft(null);
-				triggerPopup("Habis", "Masa aktif PRO lu udah abis.", "error");
-				return;
-			}
+			if (diff <= 0) { clearInterval(interval); handleLogout(); return; }
 			const hours = Math.floor(diff / 3600000);
 			const minutes = Math.floor((diff % 3600000) / 60000);
 			const seconds = Math.floor((diff % 60000) / 1000);
@@ -104,6 +113,32 @@ function App() {
 		return () => clearInterval(interval);
 	}, [isPremium, isModeratorMode]);
 
+	const handleLogout = () => {
+		localStorage.removeItem("ztwibbon_expiry");
+		setIsPremium(false); setIsModeratorMode(false); setTimeLeft(null);
+		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
+		window.location.reload(); 
+	};
+
+	const handleResetDesign = () => {
+		if(confirm("Hapus desain saat ini dan mulai baru?")) {
+			localStorage.removeItem("ztwibbon_saved_frame");
+			localStorage.removeItem("ztwibbon_saved_title");
+			localStorage.removeItem("ztwibbon_saved_caption");
+			setActiveFrame(EMPTY_FRAME); setCampaignTitle(""); setCampaignCaption("");
+			setIsTitleSet(false); setIsCaptionSet(false);
+			setSidebarState("landing");
+			setUserPhoto(null);
+		}
+	};
+
+	useEffect(() => {
+		if (activeFrame !== EMPTY_FRAME) localStorage.setItem("ztwibbon_saved_frame", activeFrame);
+		if (campaignTitle) localStorage.setItem("ztwibbon_saved_title", campaignTitle);
+		if (campaignCaption) localStorage.setItem("ztwibbon_saved_caption", campaignCaption);
+	}, [activeFrame, campaignTitle, campaignCaption]);
+
+	// ADMIN LOGIC
 	const fetchAllKeys = async () => {
 		const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
 		if (data) setAllKeys(data);
@@ -119,17 +154,18 @@ function App() {
 	const handleGenerateKey = async () => {
 		if (!newKeyName || !newKeyDuration) return;
 		const dur = parseFloat(newKeyDuration);
-		const { error } = await supabase.from('license_keys').insert([{ key_code: newKeyName, duration_hours: dur }]);
+		const maxDev = parseInt(newKeyMaxDevices);
+		
+		const { error } = await supabase.from('license_keys').insert([{ 
+			key_code: newKeyName, duration_hours: dur, max_devices: maxDev, used_devices: []
+		}]);
 		
 		if (error) {
-			if (error.code === '23505') {
-				triggerPopup("Key Duplikat", "Nama key ini udah ada di database. Coba pakai nama lain.", "error");
-			} else {
-				triggerPopup("Error", "Gagal simpan key. Cek koneksi / Izin Supabase.", "error");
-			}
+			if (error.code === '23505') triggerPopup("Key Duplikat", "Nama key ini udah ada.", "error");
+			else triggerPopup("Error", "Gagal simpan key.", "error");
 		} else {
 			triggerPopup("Sukses", "Key baru berhasil dibuat!", "success");
-			setNewKeyName(""); setNewKeyDuration("24");
+			setNewKeyName(""); setNewKeyDuration("24"); setNewKeyMaxDevices("1");
 			fetchAllKeys();
 		}
 	};
@@ -146,6 +182,7 @@ function App() {
 		}
 	};
 
+	// LOGIKA USER MASUKIN KEY (CEK DEVICE)
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		const { data, error } = await supabase.from('license_keys').select('*').eq('key_code', keyInput).single();
@@ -155,12 +192,25 @@ function App() {
 		} else if (!data.is_active) {
 			triggerPopup("Key Mati", "Key ini udah dinonaktifin sama Admin.", "error");
 		} else {
+			const deviceId = getDeviceId();
+			let currentDevices = data.used_devices || [];
+
+			if (!currentDevices.includes(deviceId)) {
+				if (currentDevices.length >= data.max_devices) {
+					triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
+					return;
+				}
+				currentDevices.push(deviceId);
+				await supabase.from('license_keys').update({ used_devices: currentDevices }).eq('id', data.id);
+			}
+
 			const durationMs = data.duration_hours * 3600000;
 			localStorage.setItem("ztwibbon_expiry", (Date.now() + durationMs).toString());
 			setIsPremium(true); setIsModeratorMode(true); setShowPngInfo(true);
 		}
 	};
 
+	// EDITOR LOGIC
 	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]; if (!file) return;
 		setFrameFile(file);
@@ -238,7 +288,7 @@ function App() {
 		return (
 			<main className="w-screen min-h-screen bg-[#0f172a] p-4 md:p-10 font-sans">
 				<CustomPopup />
-				<div className="max-w-5xl mx-auto">
+				<div className="max-w-6xl mx-auto">
 					<div className="flex justify-between items-center mb-8">
 						<h1 className="text-3xl font-bold text-white flex items-center gap-2"><Key className="text-pink-500"/> License Manager</h1>
 						<button onClick={() => setIsAdminMode(false)} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm border border-white/10">Ke Web Utama</button>
@@ -247,21 +297,26 @@ function App() {
 					<div className="bg-[#1a1d24] p-6 rounded-2xl border border-white/10 mb-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl">
 						<div className="flex-1 w-full">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Nama Key Baru</label>
-							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Contoh: PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
+							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
-						<div className="w-full md:w-48">
+						<div className="w-full md:w-32">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Durasi (Jam)</label>
 							<input type="number" value={newKeyDuration} onChange={(e) => setNewKeyDuration(e.target.value)} placeholder="24" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
+						</div>
+						<div className="w-full md:w-32">
+							<label className="text-xs text-gray-400 font-bold mb-2 block">Max Device</label>
+							<input type="number" value={newKeyMaxDevices} onChange={(e) => setNewKeyMaxDevices(e.target.value)} placeholder="1" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
 						<button onClick={handleGenerateKey} className="w-full md:w-auto bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg"><Plus size={18}/> Generate</button>
 					</div>
 
 					<div className="bg-[#1a1d24] rounded-2xl border border-white/10 overflow-x-auto shadow-2xl">
-						<table className="w-full text-left text-white min-w-[600px]">
+						<table className="w-full text-left text-white min-w-[700px]">
 							<thead className="bg-white/5 border-b border-white/10">
 								<tr>
 									<th className="p-4 font-bold text-sm">Key</th>
 									<th className="p-4 font-bold text-sm">Durasi</th>
+									<th className="p-4 font-bold text-sm">Device</th>
 									<th className="p-4 font-bold text-sm">Status</th>
 									<th className="p-4 font-bold text-sm text-right">Aksi</th>
 								</tr>
@@ -271,6 +326,7 @@ function App() {
 									<tr key={k.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
 										<td className="p-4 font-mono">{k.key_code}</td>
 										<td className="p-4 text-sm text-gray-400">{k.duration_hours} Jam</td>
+										<td className="p-4 text-sm text-gray-400 flex items-center gap-1"><MonitorSmartphone size={14}/> {k.used_devices?.length || 0} / {k.max_devices}</td>
 										<td className="p-4">
 											<span className={`px-3 py-1 rounded-full text-xs font-bold ${k.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
 												{k.is_active ? "AKTIF" : "MATI"}
@@ -311,7 +367,7 @@ function App() {
 							<CheckCircle2 size={64} className="mx-auto text-pink-500 mb-4 animate-bounce" />
 							<h2 className="text-2xl font-black text-gray-800 mb-3">Berhasil!</h2>
 							<p className="text-gray-500 mb-6">Pastikan Frame Twibbon yang kamu upload berformat <strong>.PNG (No Background)</strong> ya!</p>
-							<button onClick={() => { setShowPngInfo(false); setAppState("editor"); }} className="w-full bg-pink-600 text-white font-bold py-4 rounded-xl">Mengerti</button>
+							<button onClick={() => { setShowPngInfo(false); setAppState("editor"); window.location.reload(); }} className="w-full bg-pink-600 text-white font-bold py-4 rounded-xl">Mengerti</button>
 						</div>
 					</div>
 				)}
@@ -335,16 +391,20 @@ function App() {
 						<div className="mb-6 flex justify-center text-yellow-400"><Crown size={56} /></div>
 						<h2 className="text-3xl font-bold text-white mb-3">Versi PRO</h2>
 						
-						{isPremium && timeLeft && (
-							<div className="mb-4 bg-green-500/10 border border-green-500/30 p-2 rounded-xl flex items-center justify-center gap-2 text-green-400 font-bold text-sm"><Clock size={14}/> Aktif: {timeLeft}</div>
+						{isPremium && timeLeft ? (
+							<div className="mb-4 space-y-3">
+								<div className="bg-green-500/10 border border-green-500/30 p-2 rounded-xl flex items-center justify-center gap-2 text-green-400 font-bold text-sm"><Clock size={14}/> Aktif: {timeLeft}</div>
+								<button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/20 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold hover:bg-red-500/30 transition-colors"><LogOut size={14}/> Logout</button>
+							</div>
+						) : (
+							<>
+								<div className="relative w-full mb-4">
+									<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none placeholder-gray-500" placeholder="Masukin Key PRO" />
+									<button onClick={() => setShowKey(!showKey)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
+								</div>
+								<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">Aktifkan</button>
+							</>
 						)}
-
-						<div className="relative w-full mb-4">
-							<input type={showKey ? "text" : "password"} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className="w-full bg-black/40 border border-white/10 p-4 pr-12 rounded-xl text-center text-white focus:border-pink-500 outline-none placeholder-gray-500" placeholder="Masukin Key PRO" />
-							<button onClick={() => setShowKey(!showKey)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">{showKey ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
-						</div>
-						
-						<button onClick={handleClaimPremium} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg transition-transform active:scale-95">Aktifkan</button>
 					</div>
 				</div>
 				<Analytics />
@@ -398,7 +458,7 @@ function App() {
 					<div className="p-5 flex-1">
 						{sidebarState == "landing" && <LandingPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} />}
 						{sidebarState == "adjust" && <AdjustPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} transform={photoTransform} setTransform={setPhotoTransform} onGenerate={setSidebarState} />}
-						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} />}
+						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} onReset={handleResetDesign} />}
 					</div>
 				</div>
 			</div>
