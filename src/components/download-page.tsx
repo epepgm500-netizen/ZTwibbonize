@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownToLine, Copy, Check, Edit3, RotateCcw } from "lucide-react";
+import { ArrowDownToLine, Copy, Check, Edit3, Camera } from "lucide-react";
 
 export default function DownloadPageSidebar({ canvas, isPremium, initialCaption, onReset }: { canvas: React.RefObject<HTMLCanvasElement | null>, isPremium: boolean, initialCaption: string, onReset: () => void }) {
 	const [caption, setCaption] = useState(initialCaption || "Halo nama saya [name] dari [school]");
@@ -80,8 +80,8 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption,
 			</button>
 
 			<button onClick={onReset} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gray-200 text-gray-700 p-3 rounded-xl hover:bg-gray-300 transition-all text-xs mt-2">
-				<RotateCcw size={16} />
-				Buat Desain Baru
+				<Camera size={16} />
+				Ganti Foto / Mulai Ulang
 			</button>
 		</section>
 	);

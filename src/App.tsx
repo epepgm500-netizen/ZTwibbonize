@@ -9,7 +9,7 @@ import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, 
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const ADMIN_PASSWORD = "ADMINZTWIBBON";
+const ADMIN_PASSWORD = "ZIEADMIN";
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -91,7 +91,7 @@ function App() {
 				if (data) {
 					setCampaignTitle(data.title); setCampaignCaption(data.caption); setActiveFrame(data.frame_url);
 					setAppState("editor"); 
-					setIsModeratorMode(false); // PASTIIN PESERTA GAK BISA JADI MODERATOR
+					setIsModeratorMode(false); 
 					if (params.get("pro") === "true") setIsPremium(true);
 				}
 			}
@@ -121,7 +121,6 @@ function App() {
 		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
 	};
 
-	// RESET DESAIN LENGKAP DENGAN KONFIRMASI CUSTOM
 	const handleResetDesign = () => {
 		triggerPopup(
 			"Reset Event?", 
@@ -135,16 +134,23 @@ function App() {
 				
 				setActiveFrame(EMPTY_FRAME); 
 				setCampaignTitle(""); setCampaignCaption("");
-				setIsTitleSet(false); setIsCaptionSet(false); // Balikin state set ke false
+				setIsTitleSet(false); setIsCaptionSet(false);
 				setTempTitle(""); setTempCaption(""); 
-				setSidebarState("landing"); // BALIK KE HALAMAN UPLOAD FOTO
+				setSidebarState("landing"); 
 				setUserPhoto(null); 
 				setFrameFile(null);
-				setGeneratedLink(""); // HAPUS LINK
+				setGeneratedLink(""); 
 				
 				triggerPopup("Reset Berhasil", "Desain, judul, caption, dan link udah dihapus.", "success", true);
 			}
 		);
+	};
+
+	// Fungsi Ganti Foto Saja (Buat Peserta)
+	const handleResetPhoto = () => {
+		setSidebarState("landing");
+		setUserPhoto(null);
+		setFrameFile(null);
 	};
 
 	useEffect(() => {
@@ -162,7 +168,6 @@ function App() {
 		if (data) setAllKeys(data);
 	};
 	useEffect(() => { if (isAdminLogged) fetchAllKeys(); }, [isAdminLogged]);
-	
 	const handleAdminLogin = () => {
 		if (adminPass === ADMIN_PASSWORD) setIsAdminLogged(true);
 		else triggerPopup("Gagal", "Password Admin salah!", "error");
@@ -195,53 +200,26 @@ function App() {
 	const handleClaimPremium = async () => {
 		if (!keyInput) return;
 		setIsLoadingLogin(true);
-
 		const { data, error } = await supabase.from('license_keys').select('*').eq('key_code', keyInput).single();
-		
-		if (error || !data) {
-			setIsLoadingLogin(false);
-			triggerPopup("Akses Ditolak", "Key Pro tidak ditemukan.", "error");
-			return;
-		} 
-		
-		if (!data.is_active) {
-			setIsLoadingLogin(false);
-			triggerPopup("Key Mati", "Key ini udah dinonaktifin sama Admin.", "error");
-			return;
-		}
-
+		if (error || !data) { setIsLoadingLogin(false); triggerPopup("Akses Ditolak", "Key Pro tidak ditemukan.", "error"); return; } 
+		if (!data.is_active) { setIsLoadingLogin(false); triggerPopup("Key Mati", "Key ini udah dinonaktifin sama Admin.", "error"); return; }
 		const deviceId = getDeviceId();
 		let currentDevices = data.used_devices || [];
 		let activationTime = data.activation_time || 0;
-
 		if (currentDevices.includes(deviceId)) {
 			const timePassedMs = Date.now() - activationTime;
 			const durationMs = data.duration_hours * 3600000;
-			
-			if (timePassedMs >= durationMs) {
-				setIsLoadingLogin(false);
-				triggerPopup("Key Expired", "Waktu key ini udah habis. Silakan beli key baru.", "error");
-				return;
-			}
+			if (timePassedMs >= durationMs) { setIsLoadingLogin(false); triggerPopup("Key Expired", "Waktu key ini udah habis. Silakan beli key baru.", "error"); return; }
 		} else {
-			if (currentDevices.length >= data.max_devices) {
-				setIsLoadingLogin(false);
-				triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error");
-				return;
-			}
+			if (currentDevices.length >= data.max_devices) { setIsLoadingLogin(false); triggerPopup("Batas Device", `Key ini udah dipake di ${data.max_devices} device lain.`, "error"); return; }
 			currentDevices.push(deviceId);
 			activationTime = Date.now();
 			await supabase.from('license_keys').update({ used_devices: currentDevices, activation_time: activationTime }).eq('id', data.id);
 		}
-
 		setTimeout(() => {
 			const durationMs = data.duration_hours * 3600000;
-			const expiryTimestamp = activationTime + durationMs;
-			
-			localStorage.setItem("ztwibbon_expiry", expiryTimestamp.toString());
-			setIsPremium(true); setIsModeratorMode(true); 
-			setAppState("editor"); setShowPngInfo(true);
-			setIsLoadingLogin(false);
+			localStorage.setItem("ztwibbon_expiry", (activationTime + durationMs).toString());
+			setIsPremium(true); setIsModeratorMode(true); setAppState("editor"); setShowPngInfo(true); setIsLoadingLogin(false);
 		}, 1000);
 	};
 
@@ -278,14 +256,12 @@ function App() {
 		const uploadedUrl = await uploadFrameToSupabase();
 		if (!uploadedUrl) { setIsGenerating(false); return; }
 		const { data, error } = await supabase.from('campaigns').insert([{ title: campaignTitle, caption: campaignCaption, frame_url: uploadedUrl }]).select().single();
-		if (!error) {
-			setGeneratedLink(`${window.location.origin}/?id=${data.id}&pro=${isPremium}`);
-			setActiveFrame(uploadedUrl);
-		}
+		if (!error) { setGeneratedLink(`${window.location.origin}/?id=${data.id}&pro=${isPremium}`); setActiveFrame(uploadedUrl); }
 		setIsGenerating(false);
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
+
 	const CustomPopup = () => {
 		if (!popup.show) return null;
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
@@ -295,9 +271,7 @@ function App() {
 			return (
 				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-300">
 					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in-95 duration-300">
-						<div className="mb-4 flex justify-center text-orange-500 animate-bounce">
-							<RefreshCcw size={64} />
-						</div>
+						<div className="mb-4 flex justify-center text-orange-500"><RefreshCcw size={64} /></div>
 						<h2 className="text-2xl font-black mb-2 text-gray-800">{popup.title}</h2>
 						<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
 						<div className="flex gap-2">
@@ -310,9 +284,9 @@ function App() {
 		}
 
 		return (
-			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4">
-				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
-					<div className={`mb-4 flex justify-center ${color} ${popup.type === 'error' ? 'shake-anim' : 'animate-bounce'}`}><Icon size={64} /></div>
+			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 animate-in fade-in duration-300">
+				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden animate-in zoom-in-95 duration-300">
+					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
 					
@@ -327,7 +301,6 @@ function App() {
 			</div>
 		);
 	};
-
 	if (isAdminMode) {
 		if (!isAdminLogged) {
 			return (
@@ -537,7 +510,7 @@ function App() {
 					<div className="p-5 flex-1">
 						{sidebarState == "landing" && <LandingPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} />}
 						{sidebarState == "adjust" && <AdjustPageSidebar onPhotoSelected={(img) => { setUserPhoto(img); setSidebarState("adjust"); }} transform={photoTransform} setTransform={setPhotoTransform} onGenerate={setSidebarState} />}
-						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} onReset={handleResetDesign} />}
+						{sidebarState === "ready" && <DownloadPageSidebar canvas={canvasRef} isPremium={isPremium} initialCaption={campaignCaption} onReset={isModeratorMode ? handleResetDesign : handleResetPhoto} />}
 					</div>
 				</div>
 			</div>
