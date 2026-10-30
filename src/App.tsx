@@ -9,7 +9,7 @@ import { Crown, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, Eye, EyeOff, 
 import { Analytics } from "@vercel/analytics/react";
 
 const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const ADMIN_PASSWORD = "ZIEADMIN";
+const ADMIN_PASSWORD = "ADMINZTWIBBON"; // GANTI PASSWORD DI SINI
 
 function App() {
 	const [appState, setAppState] = useState<"home" | "editor">("home");
@@ -74,12 +74,14 @@ function App() {
 			setIsModeratorMode(true);
 		}
 
-		const savedDesign = localStorage.getItem("ztwibbon_saved_frame");
-		if (savedDesign && savedDesign !== EMPTY_FRAME) setActiveFrame(savedDesign);
-		const savedTitle = localStorage.getItem("ztwibbon_saved_title");
-		if (savedTitle) { setCampaignTitle(savedTitle); setIsTitleSet(true); }
-		const savedCaption = localStorage.getItem("ztwibbon_saved_caption");
-		if (savedCaption) { setCampaignCaption(savedCaption); setIsCaptionSet(true); }
+		try {
+			const savedDesign = localStorage.getItem("ztwibbon_saved_frame");
+			if (savedDesign && savedDesign !== EMPTY_FRAME) setActiveFrame(savedDesign);
+			const savedTitle = localStorage.getItem("ztwibbon_saved_title");
+			if (savedTitle) { setCampaignTitle(savedTitle); setIsTitleSet(true); }
+			const savedCaption = localStorage.getItem("ztwibbon_saved_caption");
+			if (savedCaption) { setCampaignCaption(savedCaption); setIsCaptionSet(true); }
+		} catch (e) { console.warn("Gagal load data dari storage"); }
 
 		const campaignId = params.get("id");
 		if (campaignId && !isAdminMode) {
@@ -120,20 +122,27 @@ function App() {
 
 	const handleResetDesign = () => {
 		if(confirm("Hapus desain saat ini dan mulai baru?")) {
-			localStorage.removeItem("ztwibbon_saved_frame");
-			localStorage.removeItem("ztwibbon_saved_title");
-			localStorage.removeItem("ztwibbon_saved_caption");
+			try {
+				localStorage.removeItem("ztwibbon_saved_frame");
+				localStorage.removeItem("ztwibbon_saved_title");
+				localStorage.removeItem("ztwibbon_saved_caption");
+			} catch (e) {}
 			setActiveFrame(EMPTY_FRAME); setCampaignTitle(""); setCampaignCaption("");
 			setIsTitleSet(false); setIsCaptionSet(false);
-			setSidebarState("landing");
-			setUserPhoto(null);
+			setSidebarState("landing"); setUserPhoto(null);
 		}
 	};
 
 	useEffect(() => {
-		if (activeFrame !== EMPTY_FRAME) localStorage.setItem("ztwibbon_saved_frame", activeFrame);
-		if (campaignTitle) localStorage.setItem("ztwibbon_saved_title", campaignTitle);
-		if (campaignCaption) localStorage.setItem("ztwibbon_saved_caption", campaignCaption);
+		try {
+			if (activeFrame && activeFrame !== EMPTY_FRAME && activeFrame.length < 2000000) {
+				localStorage.setItem("ztwibbon_saved_frame", activeFrame);
+			}
+			if (campaignTitle) localStorage.setItem("ztwibbon_saved_title", campaignTitle);
+			if (campaignCaption) localStorage.setItem("ztwibbon_saved_caption", campaignCaption);
+		} catch (error) {
+			console.warn("Memori HP/Browser penuh, gagal autosave frame.");
+		}
 	}, [activeFrame, campaignTitle, campaignCaption]);
 
 	const fetchAllKeys = async () => {
@@ -207,37 +216,33 @@ function App() {
 	};
 
 	const handleFrameSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-	const file = e.target.files?.[0]; if (!file) return;
-	setFrameFile(file);
-	
-	// 1. Preview langsung di kanvas (Biar ga blank)
-	const reader = new FileReader();
-	reader.onload = (event) => { 
-		if (event.target?.result) setActiveFrame(event.target.result as string); 
+		const file = e.target.files?.[0]; if (!file) return;
+		setFrameFile(file);
+		const reader = new FileReader();
+		reader.onload = (event) => { if (event.target?.result) setActiveFrame(event.target.result as string); };
+		reader.readAsDataURL(file);
 	};
-	reader.readAsDataURL(file);
 
-	// 2. Siapin upload di background
-	setIsUploadingFrame(true);
-};
-
-const uploadFrameToSupabase = async (): Promise<string | null> => {
-	if (!frameFile) return activeFrame;
-	const fileExt = frameFile.name.split('.').pop();
-	const fileName = `${Date.now()}.${fileExt}`;
-	
-	const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
-	
-	if (error) { 
-		setIsUploadingFrame(false); 
-		triggerPopup("Error", "Gagal upload gambar ke storage.", "error");
-		return null; 
-	}
-	
-	const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
-	setIsUploadingFrame(false);
-	return data.publicUrl;
-};
+	const uploadFrameToSupabase = async (): Promise<string | null> => {
+		if (!frameFile) return activeFrame;
+		setIsUploadingFrame(true);
+		const fileExt = frameFile.name.split('.').pop();
+		const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+		
+		const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
+		if (error) { setIsUploadingFrame(false); return null; }
+		
+		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
+		
+		const { data: files } = await supabase.storage.from('frames').list();
+		if (files) {
+			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
+			if (filesToDelete.length > 0) await supabase.storage.from('frames').remove(filesToDelete);
+		}
+		
+		setIsUploadingFrame(false);
+		return data.publicUrl;
+	};
 
 	const isFormComplete = isTitleSet && isCaptionSet && activeFrame !== EMPTY_FRAME && !isUploadingFrame;
 
@@ -255,7 +260,6 @@ const uploadFrameToSupabase = async (): Promise<string | null> => {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
-
 	const CustomPopup = () => {
 		if (!popup.show) return null;
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);

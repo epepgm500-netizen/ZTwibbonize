@@ -10,7 +10,6 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption,
 		const currentCanvas = canvas.current;
 		if (!currentCanvas) return;
 		
-		// Tambahin watermark kalau bukan Premium
 		if (!isPremium) {
 			const ctx = currentCanvas.getContext("2d");
 			if (ctx) {
@@ -25,7 +24,6 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption,
 			}
 		}
 
-		// Proses Download pake Blob (Anti Gagal)
 		currentCanvas.toBlob((blob) => {
 			if (!blob) return;
 			const url = URL.createObjectURL(blob);
@@ -81,7 +79,6 @@ export default function DownloadPageSidebar({ canvas, isPremium, initialCaption,
 				Download Gambar HD
 			</button>
 
-			{/* TOMBOL BUAT DESAIN BARU */}
 			<button onClick={onReset} className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer bg-gray-200 text-gray-700 p-3 rounded-xl hover:bg-gray-300 transition-all text-xs mt-2">
 				<RotateCcw size={16} />
 				Buat Desain Baru
