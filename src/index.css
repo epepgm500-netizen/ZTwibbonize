@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* MATIIN TRANSISI BAWAAN TAILWIND BUAT POP-UP */
+[data-state="open"] {
+    animation: none !important;
+}
