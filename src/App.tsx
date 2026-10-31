@@ -237,7 +237,7 @@ function App() {
 		const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 		const { error } = await supabase.storage.from('frames').upload(fileName, frameFile);
 		if (error) { setIsUploadingFrame(false); return null; }
-		const { data } = supabase.storage.from('frames').getPublicUrl(fileName);
+		const { data } = await supabase.storage.from('frames').getPublicUrl(fileName);
 		const { data: files } = await supabase.storage.from('frames').list();
 		if (files) {
 			const filesToDelete = files.filter(f => f.name !== fileName && f.name !== '.emptyFolderPlaceholder').map(f => f.name);
@@ -269,7 +269,7 @@ function App() {
 		if (popup.type === 'confirm') {
 			return (
 				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 fade-in">
-    <div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full zoom-in-95">
+					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full zoom-in-95">
 						<div className="mb-4 flex justify-center text-orange-500"><RefreshCcw size={64} /></div>
 						<h2 className="text-2xl font-black mb-2 text-gray-800">{popup.title}</h2>
 						<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
@@ -284,7 +284,7 @@ function App() {
 
 		return (
 			<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 fade-in">
-    <div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden zoom-in-95">
+				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden zoom-in-95">
 					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
