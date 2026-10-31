@@ -14,11 +14,9 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 	const size = 1000;
 	const [safeFrame, setSafeFrame] = useState<HTMLImageElement | null>(null);
 
-	// 1. Bypass CORS: Ubah URL gambar jadi Base64
 	useEffect(() => {
 		if (!frameSrc) return;
 		let isMounted = true;
-
 		if (frameSrc.startsWith("data:")) {
 			const img = new Image();
 			img.onload = () => { if (isMounted) setSafeFrame(img); };
@@ -38,17 +36,13 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 					const safeImg = new Image();
 					safeImg.onload = () => { if (isMounted) setSafeFrame(safeImg); };
 					safeImg.src = dataUrl;
-				} catch (error) {
-					console.error("Gagal convert CORS", error);
-				}
+				} catch (error) {}
 			};
 			img.src = frameSrc;
 		}
-
 		return () => { isMounted = false; };
 	}, [frameSrc]);
 
-	// 2. Fungsi Gambar
 	function draw() {
 		const canvas = canvasRef?.current;
 		if (!canvas) return;
@@ -79,6 +73,7 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 
 	const isDragging = useRef(false);
 	const lastPos = useRef({ x: 0, y: 0 });
+	const reqRef = useRef<number | null>(null);
 
 	function handleDragDown(e: React.PointerEvent<HTMLCanvasElement>) {
 		if (!isEditMode || !userPhoto) return;
@@ -89,17 +84,32 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 
 	function handleDragMove(e: React.PointerEvent<HTMLCanvasElement>) {
 		if (!isEditMode || !isDragging.current || !userPhoto) return;
+		
+		// Bikin scroll layar ga ikut ketarik pas ngegeser
+		if (e.cancelable) e.preventDefault(); 
+
 		const dx = e.clientX - lastPos.current.x;
 		const dy = e.clientY - lastPos.current.y;
 		lastPos.current = { x: e.clientX, y: e.clientY };
+		
 		const canvas = canvasRef.current!;
 		const ratio = canvas.width / canvas.clientWidth;
-		setTransform((prev) => ({ ...prev, x: prev.x + dx * ratio, y: prev.y + dy * ratio }));
+
+		// Pake requestAnimationFrame biar super mulus di HP
+		if (reqRef.current) cancelAnimationFrame(reqRef.current);
+		reqRef.current = requestAnimationFrame(() => {
+			setTransform((prev) => ({ 
+				...prev, 
+				x: prev.x + dx * ratio, 
+				y: prev.y + dy * ratio 
+			}));
+		});
 	}
 
 	function handleDragUp() {
 		if (!isEditMode || !userPhoto) return;
 		isDragging.current = false;
+		if (reqRef.current) cancelAnimationFrame(reqRef.current);
 	}
 
 	return (
@@ -112,10 +122,13 @@ export default function TwibbonCanvas({ userPhoto, transform, frameSrc, isEditMo
 				ref={canvasRef} 
 				width={size} 
 				height={size} 
+				// touch-action-none biar layar ga ikut ke-scroll pas ngegeser
+				style={{ touchAction: 'none' }} 
 				className={`relative z-10 w-full h-full object-contain ${isEditMode && userPhoto ? "cursor-move" : "cursor-default"}`} 
 				onPointerDown={handleDragDown} 
 				onPointerMove={handleDragMove} 
 				onPointerUp={handleDragUp} 
+				onPointerCancel={handleDragUp}
 			/>
 		</div>
 	);

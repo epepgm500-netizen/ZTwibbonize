@@ -329,7 +329,7 @@ function App() {
 					<div className="bg-[#1a1d24] p-6 rounded-2xl border border-white/10 mb-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl">
 						<div className="flex-1 w-full">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Nama Key Baru</label>
-							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
+							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Masukin bebas..." className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
 						<div className="w-full md:w-32">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Durasi (Jam)</label>
@@ -484,7 +484,7 @@ function App() {
 				<div className="flex-1 flex flex-col justify-center items-center p-4 md:p-10 relative overflow-y-auto">
 					<div className="relative z-10 max-h-[60vh] md:max-h-[80vh] aspect-square flex justify-center items-center">
 						<TwibbonCanvas userPhoto={userPhoto} frameSrc={activeFrame} transform={photoTransform} setTransform={setPhotoTransform} isEditMode={sidebarState == "adjust"} canvasRef={canvasRef} />
-						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl pointer-events-none"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto lu di panel kanan ⬇️</p></div>}
+						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl pointer-events-none"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto kamu di panel kanan ⬇️</p></div>}
 					</div>
 				</div>
 				<div className="w-full md:w-[400px] bg-[#1a1d24] border-t md:border-t-0 md:border-l border-white/10 flex flex-col z-10 shadow-2xl h-[50vh] md:h-auto overflow-y-auto shrink-0">
