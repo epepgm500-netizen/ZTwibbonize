@@ -12,6 +12,9 @@ const EMPTY_FRAME = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAA
 const ADMIN_PASSWORD = "ZIETWIBBON";
 
 function App() {
+	// State buat nahan loading biar ga bocor halaman login
+	const [isInitializing, setIsInitializing] = useState(true);
+
 	const [appState, setAppState] = useState<"home" | "editor">("home");
 	const [isPremium, setIsPremium] = useState(false);
 	const [keyInput, setKeyInput] = useState("");
@@ -67,7 +70,13 @@ function App() {
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
-		if (params.get("admin") === "true") setIsAdminMode(true);
+		
+		// Cek Admin dulu
+		if (params.get("admin") === "true") {
+			setIsAdminMode(true);
+			setIsInitializing(false);
+			return;
+		}
 
 		const savedExpiry = localStorage.getItem("ztwibbon_expiry");
 		if (savedExpiry) {
@@ -85,7 +94,7 @@ function App() {
 		} catch (e) {}
 
 		const campaignId = params.get("id");
-		if (campaignId && !isAdminMode) {
+		if (campaignId) {
 			async function fetchCampaign() {
 				const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
 				if (data) {
@@ -94,10 +103,15 @@ function App() {
 					setIsModeratorMode(false); 
 					if (params.get("pro") === "true") setIsPremium(true);
 				}
+				// Matiin loading setelah data dapet
+				setIsInitializing(false);
 			}
 			fetchCampaign();
+		} else {
+			// Kalo gaada id di URL, berarti ini halaman utama (bukan share link)
+			setIsInitializing(false);
 		}
-	}, [isAdminMode]);
+	}, []); // Hapus isAdminMode dari dependency biar ga re-render
 
 	useEffect(() => {
 		if (!isPremium || !isModeratorMode) return;
@@ -118,13 +132,13 @@ function App() {
 		localStorage.removeItem("ztwibbon_expiry");
 		setIsPremium(false); setIsModeratorMode(false); setTimeLeft(null);
 		setAppState("home");
-		triggerPopup("Logout", "Sesi PRO kamu udah berakhir.", "info");
+		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
 	};
 
 	const handleResetDesign = () => {
 		triggerPopup(
 			"Reset Event?", 
-			"Semua Judul, Caption, dan Frame bakal dihapus permanen dari layar. Kuota device kamu tetep aman.", 
+			"Semua Judul, Caption, dan Frame bakal dihapus permanen dari layar. Kuota device lu tetep aman.", 
 			"confirm",
 			false,
 			() => {
@@ -260,16 +274,16 @@ function App() {
 	};
 
 	const handleCopyLink = () => { navigator.clipboard.writeText(generatedLink); setIsCopied(true); setTimeout(() => setIsCopied(false), 3000); };
+
 	const CustomPopup = () => {
 		if (!popup.show) return null;
 		const Icon = popup.type === 'error' ? AlertCircle : (popup.type === 'success' ? CheckCircle2 : CheckCircle);
 		const color = popup.type === 'error' ? 'text-red-500' : (popup.type === 'success' ? 'text-green-500' : 'text-blue-500');
 
-		// POP-UP KONFIRMASI RESET (Animasi sama kaya pop-up PNG)
 		if (popup.type === 'confirm') {
 			return (
-				<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-300">
-					<div className="bg-white p-8 rounded-[2rem] text-center max-w-sm w-full">
+				<div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/70 p-4 animate-in fade-in zoom-in-95 duration-300">
+					<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full">
 						<div className="mb-4 flex justify-center text-orange-500"><RefreshCcw size={64} /></div>
 						<h2 className="text-2xl font-black mb-2 text-gray-800">{popup.title}</h2>
 						<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
@@ -282,25 +296,31 @@ function App() {
 			);
 		}
 
-		// POP-UP NOTIFIKASI BIASA (Animasi sama kaya pop-up PNG)
 		return (
 			<div className="fixed inset-0 z-[90] flex justify-center items-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-300">
 				<div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center max-w-sm w-full relative overflow-hidden">
 					<div className={`mb-4 flex justify-center ${color}`}><Icon size={64} /></div>
 					<h2 className={`text-2xl font-black mb-2 ${color}`}>{popup.title}</h2>
 					<p className="text-gray-500 font-medium mb-6">{popup.message}</p>
-					
 					{popup.showBar && (
 						<div className="w-full bg-gray-200 h-1.5 rounded-full mb-6 overflow-hidden">
 							<div className="bg-green-500 h-full w-full origin-left animate-[shrink_2s_ease-out_forwards]"></div>
 						</div>
 					)}
-					
 					<button onClick={() => setPopup({ ...popup, show: false })} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors">Mengerti</button>
 				</div>
 			</div>
 		);
 	};
+	// LAYAR LOADING (Biar ga bocor halaman login pas buka share link)
+	if (isInitializing) {
+		return (
+			<main className="w-screen h-screen flex flex-col justify-center items-center bg-[#0f1115] font-sans">
+				<Loader2 className="animate-spin text-pink-500 mb-4" size={48} />
+				<p className="text-gray-400 font-medium animate-pulse">Memuat Event...</p>
+			</main>
+		);
+	}
 
 	if (isAdminMode) {
 		if (!isAdminLogged) {
@@ -329,7 +349,7 @@ function App() {
 					<div className="bg-[#1a1d24] p-6 rounded-2xl border border-white/10 mb-8 flex flex-col md:flex-row gap-4 items-end shadow-2xl">
 						<div className="flex-1 w-full">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Nama Key Baru</label>
-							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Masukin bebas..." className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
+							<input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="PROMO-10K" className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-white focus:border-pink-500 outline-none" />
 						</div>
 						<div className="w-full md:w-32">
 							<label className="text-xs text-gray-400 font-bold mb-2 block">Durasi (Jam)</label>
@@ -484,7 +504,7 @@ function App() {
 				<div className="flex-1 flex flex-col justify-center items-center p-4 md:p-10 relative overflow-y-auto">
 					<div className="relative z-10 max-h-[60vh] md:max-h-[80vh] aspect-square flex justify-center items-center">
 						<TwibbonCanvas userPhoto={userPhoto} frameSrc={activeFrame} transform={photoTransform} setTransform={setPhotoTransform} isEditMode={sidebarState == "adjust"} canvasRef={canvasRef} />
-						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl pointer-events-none"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto kamu di panel kanan ⬇️</p></div>}
+						{!userPhoto && <div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-xl pointer-events-none"><p className="text-white/70 text-sm font-bold bg-black/60 px-6 py-3 rounded-full animate-pulse">Upload foto lu di panel kanan ⬇️</p></div>}
 					</div>
 				</div>
 				<div className="w-full md:w-[400px] bg-[#1a1d24] border-t md:border-t-0 md:border-l border-white/10 flex flex-col z-10 shadow-2xl h-[50vh] md:h-auto overflow-y-auto shrink-0">
