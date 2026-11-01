@@ -15,7 +15,7 @@ export default function LandingPageSidebar({ onPhotoSelected }: { onPhotoSelecte
 				<input onChange={handleUpload} accept="image/*" type="file" className="absolute inset-0 z-10 opacity-0 cursor-pointer" />
 				<h3 className="flex items-center justify-center gap-2 font-bold text-sm">
 					<Camera size={18} />
-					Upload Foto Lu
+					Upload Foto Kamu
 				</h3>
 			</div>
 		</section>

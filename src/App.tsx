@@ -118,13 +118,13 @@ function App() {
 		localStorage.removeItem("ztwibbon_expiry");
 		setIsPremium(false); setIsModeratorMode(false); setTimeLeft(null);
 		setAppState("home");
-		triggerPopup("Logout", "Sesi PRO lu udah berakhir.", "info");
+		triggerPopup("Logout", "Sesi PRO kamu udah berakhir.", "info");
 	};
 
 	const handleResetDesign = () => {
 		triggerPopup(
 			"Reset Event?", 
-			"Semua Judul, Caption, dan Frame bakal dihapus permanen dari layar. Kuota device lu tetep aman.", 
+			"Semua Judul, Caption, dan Frame bakal dihapus permanen dari layar. Kuota device kamu tetep aman.", 
 			"confirm",
 			false,
 			() => {
